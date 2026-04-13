@@ -297,7 +297,7 @@ function AutoProductInfo({cnt,setCnt}){
   const clr="#c09020";
   const CBtn=({onClick})=><td style={{paddingLeft:8}}><div onClick={onClick} style={{
     padding:"4px 14px",background:clr,color:"#fff",fontWeight:700,fontSize:12,
-    cursor:"pointer",border:"1px solid #906818",textAlign:"center",whiteSpace:"nowrap"}}>CLEAR</div></td>;
+    cursor:"pointer",border:"2px solid #906818",textAlign:"center",whiteSpace:"nowrap"}}>CLEAR</div></td>;
   return <div style={{border:"1px solid #888",padding:"6px 10px",width:"75%"}}>
     <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>PRODUCT INFO</div>
     <table cellSpacing={0} cellPadding={0}><tbody>
@@ -509,7 +509,7 @@ function ManualTransfer(){
       {/* ALIGNER */}
       <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>ALIGNER</div>
       <div style={{display:"flex",gap:6,marginBottom:24}}>
-        <Btn t={"GET\nPOS"} c={C.grn}/><Btn t={"GET/VAC\nON"} c={C.grn}/><Btn t={"ALIGNMENT\nPOSITION"} c={C.grn}/><Btn t={"ALIGNMENT\nGO"} c={C.grn}/>
+        <Btn t={"GET\nPOS"} c={C.grn}/><Btn t={"GET/VAC\nON"} c={C.grn}/><Btn t={"ALIGNMENT\nPOSITION"} c={"#3a5a3a"}/><Btn t={"ALIGNMENT\nGO"} c={"#3a5a3a"}/>
         <Btn t="PUT POS" c={C.grn}/><Btn t={"PUT/VAC\nOFF"} c={C.grn}/></div>
       {/* M91/92 + SV102 side by side */}
       <div style={{display:"flex",gap:40}}>
