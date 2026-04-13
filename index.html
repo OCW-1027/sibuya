@@ -856,15 +856,15 @@ function ManualMotorPage(){
               <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
                 <span style={{fontSize:11}}>ERROR CODE</span><IF v={mi===0?"104":"105"} w={50}/>
                 <Btn t="FREE" c={C.grn}/><Btn t={"HOME\nRETURN"} c={C.blu}/><Btn t={"RELATIVE\nMOVE"} c={C.blu}/></div>
+              <div style={{display:"flex",gap:4,marginBottom:6}}>
+                {m[2]==="Y"||m[2]==="Z"?<><Btn t="↑" c={C.grn}/><Btn t="↓" c={C.grn}/></>
+                      :<><Btn t="←" c={C.grn}/><Btn t="→" c={C.grn}/></>}</div>
               <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}>
                 <span style={{fontSize:11}}>WARNING CODE</span><IF v="0" w={50}/></div>
               <div style={{display:"flex",gap:4,alignItems:"center"}}>
                 <span style={{fontSize:11}}>SENSOR</span>
                 <Sensor t="+OT" c="#888"/><Sensor t="-OT" c="#888"/><Sensor t="ORG" c="#e08000"/><Sensor t="NORG" c="#c00000"/></div>
             </div>
-            <div style={{display:"flex",gap:4,paddingTop:10}}>
-              {m[2]==="Y"||m[2]==="Z"?<div style={{display:"flex",flexDirection:"column",gap:4}}><Btn t="↑" c={C.grn}/><Btn t="↓" c={C.grn}/></div>
-                    :<><Btn t="←" c={C.grn}/><Btn t="→" c={C.grn}/></>}</div>
           </div>
         </div>)}
       </div>
