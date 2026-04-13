@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SBP662 HMI Training Demo v5.9</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#2a2a2a;font-family:'Segoe UI',Tahoma,sans-serif;margin:0}
+</style>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect} = React;
+
+const C = {
+  hdr:"#0e2d0a", tabOn:"#50c850", tabOff:"#1f371d", body:"#f0f0f0",
+  motor:"#98e030", blu:"#24248a", grn:"#40a840", ylw:"#e0e000",
+  red:"#982828", cya:"#06d8d8", pur:"#7030a0", amb:"#c09020",
+  wh:"#fff", bk:"#000", brd:"#808080", stYlw:"#c0d820", stRed:"#c03030", buzz:"#c89830",
+  navOn:"#e0e0e0", navOff:"#505050", subOn:"#f0f0f0", subOff:"#b0b0b0"
+};
+
+function Btn({t,c=C.grn,onClick,s}){
+  const [hv,setHv]=useState(false);
+  const [on,setOn]=useState(false);
+  const handleClick=()=>{setOn(p=>!p);onClick&&onClick();};
+  return <div style={{padding:s?"4px 8px":"8px 16px",background:on?"#98e030":c,
+    filter:hv?"brightness(1.15)":"none",
+    color:on?"#000":C.wh,border:"1px solid rgba(0,0,0,0.3)",fontWeight:700,fontSize:s?10:13,
+    cursor:"pointer",textAlign:"center",lineHeight:s?"13px":"15px",borderRadius:1,
+    minWidth:s?60:90,minHeight:s?28:40,display:"inline-flex",flexDirection:"column",
+    alignItems:"center",justifyContent:"center",whiteSpace:"pre-wrap",
+    transition:"background 0.1s",userSelect:"none"}}
+    onClick={handleClick} onMouseEnter={()=>setHv(true)} onMouseLeave={()=>setHv(false)}>{t}</div>;
+}
+
+function MB({id,nm,on,onClick}){
+  return <div style={{display:"inline-flex",flexDirection:"column",alignItems:"center",
+    justifyContent:"center",padding:"3px 4px",minWidth:100,minHeight:36,
+    background:on?"#80c020":C.motor,border:"1px solid #888",cursor:"pointer",
+    fontSize:10,fontWeight:700,textAlign:"center",lineHeight:"13px"}}
+    onClick={()=>onClick&&onClick(id)}>
+    <span style={{fontSize:8,color:"#555"}}>{id}</span>
+    <span style={{color:"#111"}}>{nm}</span>
+  </div>;
+}
+
+function IF({v,w=60}){
+  const [val,setVal]=useState(v!=null?String(v):"");
+  useEffect(()=>{setVal(v!=null?String(v):"");},[v]);
+  return <input style={{width:w,padding:"2px 4px",border:"1px solid #a0a0a0",
+    background:C.wh,fontSize:11,textAlign:"right"}}
+    value={val} onChange={e=>setVal(e.target.value)}/>;
+}
+
+function SubTabs({tabs,active,onSelect}){
+  return <div style={{display:"flex",gap:1,marginBottom:6,borderBottom:"1px solid "+C.brd}}>
+    {tabs.map(t=><div key={t} onClick={()=>onSelect(t)}
+      style={{padding:"4px 14px",fontSize:10,fontWeight:active===t?700:400,
+        border:"1px solid "+C.brd,borderBottom:active===t?"2px solid "+C.body:"1px solid "+C.brd,
+        background:active===t?C.body:C.subOff,cursor:"pointer",borderRadius:"2px 2px 0 0",marginBottom:-1}}>{t}</div>)}
+  </div>;
+}
+
+function NavPanel({items,active,onSelect}){
+  return <div style={{width:120,display:"flex",flexDirection:"column",gap:3}}>
+    {items.map(n=><div key={n} onClick={()=>onSelect(n)}
+      style={{padding:"8px 6px",background:active===n?"#e0e0e0":"#404040",
+        color:active===n?C.bk:C.wh,border:"1px solid "+C.brd,
+        fontWeight:700,fontSize:11,cursor:"pointer",textAlign:"center",
+        whiteSpace:"pre-wrap",lineHeight:"14px"}}>{n}</div>)}
+  </div>;
+}
+
+function PRow({l,v,u}){
+  return <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+    <span style={{fontWeight:700,fontSize:10,minWidth:200}}>{l}</span>
+    <IF v={v} w={70}/><span style={{fontSize:9}}>{u||"mm"}</span>
+  </div>;
+}
+
+function StepsPanel(){
+  return <div style={{border:"1px solid "+C.brd,background:C.wh,fontSize:11,width:180}}>
+    <div style={{display:"flex",fontWeight:700,padding:"4px 6px",background:"#d0d0d0",borderBottom:"1px solid "+C.brd}}>
+      <span style={{width:45}}>Steps</span><span>State</span></div>
+    <div style={{maxHeight:550,overflow:"auto"}}>
+      {Array.from({length:25},(_,i)=>25-i).map(n=>
+        <div key={n} style={{display:"flex",padding:"3px 6px",background:n%2===0?"#f4f4f4":C.wh,borderBottom:"1px solid #e8e8e8"}}>
+          <span style={{width:45,fontWeight:700}}>{n}</span><span style={{color:"#555"}}>NO WAFER /</span></div>)}
+    </div>
+  </div>;
+}
+
+// ══════ 1. USER ══════
+function UserTab(){
+  return <div style={{padding:"20px 30px",minHeight:520,position:"relative"}}>
+    <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>USER LEVEL</div>
+    <input type="password" defaultValue="*" style={{width:200,padding:"4px 8px",fontSize:14,border:"1px solid "+C.brd}}/>
+    {/* Power button - bottom left */}
+    <div style={{position:"absolute",bottom:60,left:60,display:"flex",alignItems:"center",gap:4}}>
+      <div style={{width:60,height:60,borderRadius:"50%",border:"3px solid #40c040",display:"flex",
+        alignItems:"center",justifyContent:"center",cursor:"pointer",background:"transparent"}}>
+        <span style={{fontSize:32,color:"#40c040",lineHeight:1}}>⏻</span></div>
+      <span style={{fontSize:11,fontWeight:700,color:"#40c040"}}>Power</span></div>
+    {/* Right side buttons */}
+    <div style={{position:"absolute",right:30,top:200,display:"flex",flexDirection:"column",gap:8}}>
+      <Btn t="EventLog(USB)" c={C.grn}/><Btn t="RemoveUSB" c={C.red}/></div>
+    <div style={{position:"absolute",right:30,top:340}}>
+      <Btn t="SoftVer" c={C.amb}/></div>
+    {/* Version - bottom right */}
+    <div style={{position:"absolute",bottom:40,right:30}}>
+      <div style={{fontWeight:700,fontSize:12,marginBottom:4}}>Version</div>
+      <div style={{border:"1px solid "+C.brd,padding:"6px 12px",fontSize:11,lineHeight:"20px",background:C.wh}}>
+        <div style={{display:"flex",gap:16}}><span style={{width:60}}>PLC :</span><span>1.42</span></div>
+        <div style={{display:"flex",gap:16}}><span style={{width:60}}>HMI :</span><span>1.35</span></div>
+        <div style={{display:"flex",gap:16}}><span style={{width:60}}>VLIB :</span><span>4.38.19.2</span></div>
+        <div style={{display:"flex",gap:16}}><span style={{width:60}}>ALIGNIF :</span><span>2.19</span></div></div>
+    </div>
+  </div>;
+}
+
+// ══════ 2. HOME RETURN ══════
+function HomeReturnTab(){
+  const [am,setAm]=useState({});
+  const [vp,setVp]=useState("OFF");
+  const toggle=id=>{setAm(p=>({...p,[id]:!p[id]}));};
+  const bw=126,bh=44,gap=6;
+  const HB=({id,nm,big})=><div style={{display:"inline-flex",flexDirection:"column",alignItems:"center",
+    justifyContent:"center",width:big?140:bw,height:bh,
+    background:am[id]?"#80c020":C.motor,border:"2px solid #666",cursor:"pointer",
+    fontWeight:700,textAlign:"center",lineHeight:"14px",userSelect:"none"}}
+    onClick={()=>toggle(id)}>
+    <span style={{fontSize:10,color:"#333"}}>{id}</span>
+    <span style={{fontSize:10,color:"#000"}}>{nm}</span></div>;
+  return <div style={{padding:"10px 20px"}}>
+    {/* Row: ALL AXES left, VACUUM PUMP center-right */}
+    <div style={{display:"flex",alignItems:"flex-start",marginBottom:16}}>
+      <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",
+        width:bw,height:bh,background:C.cya,color:C.wh,border:"2px solid #666",
+        fontWeight:700,fontSize:13,cursor:"pointer",userSelect:"none"}}
+        onClick={()=>{const all={};["M01","M02","M05","M03","M04","M11","M12","M07",
+          "M21","M22","M25","M23","M24","M31","M32","M26","M27","M28","M29","M34","M30",
+          "M91","M92","M93","LP","AL"].forEach(k=>all[k]=true);setAm(all);}}>ALL AXES</div>
+      <div style={{flex:1}}/>
+      <div style={{textAlign:"center"}}>
+        <div style={{fontWeight:700,fontSize:12,marginBottom:4}}>VACUUM PUMP</div>
+        <div style={{display:"flex",gap:gap}}>
+          <div onClick={()=>setVp("ON")} style={{width:100,height:bh,display:"inline-flex",alignItems:"center",justifyContent:"center",
+            background:vp==="ON"?"#00a000":"#1a4a1a",color:C.wh,border:"2px solid #666",
+            fontWeight:700,fontSize:13,cursor:"pointer"}}>ON</div>
+          <div onClick={()=>setVp("OFF")} style={{width:100,height:bh,display:"inline-flex",alignItems:"center",justifyContent:"center",
+            background:vp==="OFF"?"#00c000":"#1a4a1a",color:C.wh,border:"2px solid #666",
+            fontWeight:700,fontSize:13,cursor:"pointer"}}>OFF</div>
+        </div>
+      </div>
+      <div style={{flex:1}}/>
+    </div>
+    {/* FLUX PARTS */}
+    <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>FLUX PARTS</div>
+    <div style={{display:"flex",gap:gap,flexWrap:"wrap",marginBottom:4}}>
+      <HB id="M01" nm="FLUX STAGE X"/><HB id="M02" nm="FLUX STAGE Y"/><HB id="M05" nm="FLUX STAGE θ"/>
+      <HB id="M03" nm="FLUX STAGE Z"/><HB id="M04" nm="FLUX SUPPORT Z"/><HB id="M11" nm="FLUX CAMERA X"/>
+      <HB id="M12" nm="FLUX CAMERA Y"/></div>
+    <div style={{display:"flex",gap:gap,marginBottom:16}}>
+      <HB id="M07" nm="FLUX SQUEEGEE Y"/></div>
+    {/* BALL PARTS */}
+    <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>BALL PARTS</div>
+    <div style={{display:"flex",gap:gap,flexWrap:"wrap",marginBottom:4}}>
+      <HB id="M21" nm="BALL STAGE X"/><HB id="M22" nm="BALL STAGE Y"/><HB id="M25" nm="BALL STAGE θ"/>
+      <HB id="M23" nm="BALL STAGE Z"/><HB id="M24" nm="B-STAGE SUPPORT Z"/><HB id="M31" nm="BALL CAMERA X"/>
+      <HB id="M32" nm="BALL CAMERA Y"/></div>
+    <div style={{display:"flex",gap:gap,marginBottom:16}}>
+      <HB id="M26" nm="BALL X"/><HB id="M27" nm="BALL Y"/><HB id="M28" nm="BALL Z"/>
+      <HB id="M29" nm="REMOVE NOZZLE Z"/><HB id="M34" nm="BALL SUPPLY X"/><HB id="M30" nm="B-MASK CAMERA X"/></div>
+    {/* TRANSFER PARTS */}
+    <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>TRANSFER PARTS</div>
+    <div style={{display:"flex",gap:gap,alignItems:"center"}}>
+      <HB id="M91" nm="WAFER ROBOT Z"/><HB id="M92" nm="WAFER ROBOT θ"/><HB id="M93" nm="WAFER ROBOT R"/>
+      <div style={{width:40}}/>
+      <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",
+        width:140,height:bh,background:am["LP"]?"#80c020":C.motor,border:"2px solid #666",
+        cursor:"pointer",fontWeight:700,fontSize:12,userSelect:"none"}}
+        onClick={()=>toggle("LP")}>LOAD PORT</div>
+      <div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",
+        width:140,height:bh,background:am["AL"]?"#80c020":C.motor,border:"2px solid #666",
+        cursor:"pointer",fontWeight:700,fontSize:12,userSelect:"none"}}
+        onClick={()=>toggle("AL")}>ALIGNER</div>
+    </div>
+  </div>;
+}
+
+// ══════ 3. AUTO ══════
+function AutoTab(){
+  const [sub,setSub]=useState("PRODUCT");
+  const [mode,setMode]=useState("FLUX\nONLY");
+  const [cnt,setCnt]=useState({iw:0,ok:3,ng:0,sqCnt:0,sqMax:9999,fmClnCnt:0,fmClnMax:0,bmClnCnt:0,bmClnMax:0,fluxTimer:"35366:47",fluxTimerSet:"0:00"});
+  return <div>
+    <SubTabs tabs={["PRODUCT","PRODUCT INFO","IMAGE","TIME","POS CHECK"]} active={sub} onSelect={setSub}/>
+    {sub==="PRODUCT"&&<AutoProduct mode={mode} setMode={setMode}/>}
+    {sub==="PRODUCT INFO"&&<AutoProductInfo cnt={cnt} setCnt={setCnt}/>}
+    {sub==="IMAGE"&&<AutoImage/>}
+    {sub==="TIME"&&<AutoTime/>}
+    {sub==="POS CHECK"&&<AutoPosCheck/>}
+  </div>;
+}
+
+function AutoProduct({mode,setMode}){
+  const ModeBtn=({t,active,onClick})=><div onClick={onClick} style={{
+    padding:"6px 14px",background:C.blu,color:C.wh,border:active?"3px solid #00ff00":"3px solid #333",
+    fontWeight:700,fontSize:12,cursor:"pointer",textAlign:"center",whiteSpace:"pre-wrap",
+    minWidth:80,minHeight:38,display:"inline-flex",alignItems:"center",justifyContent:"center",lineHeight:"15px"}}>{t}</div>;
+  const Ind=({t,on})=><div style={{padding:"1px 12px",background:on?"#00c000":"#c00000",color:C.wh,
+    fontWeight:700,fontSize:9,border:"1px solid #555",display:"inline-block"}}>{t}</div>;
+  return <div style={{display:"flex",gap:12}}>
+    <div style={{width:620}}>
+      {/* RUN MODE */}
+      <div style={{border:"1px solid #888",padding:8,marginBottom:6}}>
+        <div style={{fontWeight:700,fontSize:11,marginBottom:6}}>RUN MODE</div>
+        <div style={{display:"flex",gap:8}}>
+          <ModeBtn t={"FLUX\nONLY"} active={mode==="FLUX\nONLY"} onClick={()=>setMode("FLUX\nONLY")}/>
+          <ModeBtn t={"BALL\nONLY"} active={mode==="BALL\nONLY"} onClick={()=>setMode("BALL\nONLY")}/>
+          <ModeBtn t={"PASS\nMODE"} active={mode==="PASS\nMODE"} onClick={()=>setMode("PASS\nMODE")}/></div>
+      </div>
+      {/* WaferState */}
+      <div style={{border:"1px solid #888",padding:6,marginBottom:6,width:170}}>
+        <div style={{fontWeight:700,fontSize:10}}>WaferState</div>
+        <div style={{fontSize:10,lineHeight:"16px"}}>
+          <div>10:NG wafer</div><div>11:MZ picked up</div><div>12:Aligned</div>
+          <div>13:Flux printed</div><div>14:Ball mounted</div></div>
+      </div>
+      {/* Bottom row: WAFER INFORMATION + MASK MONITOR STOP side by side */}
+      <div style={{display:"flex",gap:8}}>
+        {/* WAFER INFORMATION */}
+        <div style={{border:"1px solid #888",padding:8,flex:1}}>
+          <div style={{fontWeight:700,fontSize:11,marginBottom:6}}>WAFER INFORMATION</div>
+          {/* ALIGNER */}
+          <div style={{textAlign:"center",fontWeight:700,fontSize:10,marginBottom:3}}>ALIGNER</div>
+          <div style={{textAlign:"center",marginBottom:4}}>
+            <Ind t="DATA" on={false}/></div>
+          <div style={{display:"flex",justifyContent:"center",gap:6,fontSize:9,marginBottom:10}}>
+            <span style={{fontWeight:700}}>State</span><IF v="0" w={30}/><IF v="" w={50}/>
+            <span style={{fontWeight:700,marginLeft:8}}>No</span><IF v="0" w={30}/></div>
+          {/* Three columns */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,textAlign:"center"}}>
+            <span style={{fontWeight:700,fontSize:10}}>FLUX STAGE</span>
+            <span style={{fontWeight:700,fontSize:10}}>ROBOT</span>
+            <span style={{fontWeight:700,fontSize:10}}>BALL STAGE</span></div>
+          <div style={{height:6}}/>
+          {/* SENSOR row */}
+          <div style={{display:"grid",gridTemplateColumns:"60px 1fr 1fr 1fr",alignItems:"start",gap:0,marginBottom:4}}>
+            <span style={{fontWeight:700,fontSize:9}}>SENSOR</span>
+            <div style={{textAlign:"center"}}><Ind t="PAD" on={false}/><div style={{height:2}}/><Ind t="STAGE" on={false}/></div>
+            <div style={{textAlign:"center"}}><Ind t="ARM" on={true}/></div>
+            <div style={{textAlign:"center"}}><Ind t="PAD" on={false}/><div style={{height:2}}/><Ind t="STAGE" on={true}/></div>
+          </div>
+          {/* DATA row */}
+          <div style={{display:"grid",gridTemplateColumns:"60px 1fr 1fr 1fr",alignItems:"center",gap:0,marginBottom:6}}>
+            <span style={{fontWeight:700,fontSize:9}}>DATA</span>
+            <div style={{textAlign:"center"}}><Ind t="DATA" on={false}/></div>
+            <div style={{textAlign:"center"}}><Ind t="DATA" on={true}/></div>
+            <div style={{textAlign:"center"}}><Ind t="DATA" on={false}/></div>
+          </div>
+          {/* State / No under each */}
+          <div style={{display:"grid",gridTemplateColumns:"60px 1fr 1fr 1fr",gap:0,fontSize:9}}>
+            <div/>
+            <div style={{textAlign:"center"}}><div>State <IF v="0" w={24}/></div><div>No <IF v="0" w={24}/></div></div>
+            <div style={{textAlign:"center"}}><div>State <IF v="0" w={24}/></div><div>No <IF v="0" w={24}/></div></div>
+            <div style={{textAlign:"center"}}><div>State <IF v="1" w={24}/></div><div>No <IF v="99" w={24}/></div></div>
+          </div>
+        </div>
+        {/* MASK MONITOR STOP */}
+        <div style={{border:"1px solid #888",padding:8,minWidth:200}}>
+          <div style={{fontWeight:700,fontSize:11,marginBottom:6}}>MASK MONITOR STOP</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+            <Btn t="PRE-MOUNT" c={C.grn}/><Btn t="AFT-MOUNT" c={C.grn}/>
+            <Btn t={"SCREEN\nCHG. ←"} c={C.grn}/><Btn t={"SCREEN\nCHG. →"} c={C.grn}/>
+            <Btn t={"MONITOR1\nPOSITION"} c={C.grn}/><Btn t={"MONITOR2\nPOSITION"} c={C.grn}/>
+            <Btn t={"MONITOR3\nPOSITION"} c={C.grn}/><Btn t={"MONITOR4\nPOSITION"} c={C.grn}/>
+          </div>
+          <div style={{marginTop:4}}><Btn t={"MONI 5-10\nPOSITION"} c={C.grn}/></div>
+        </div>
+      </div>
+    </div>
+    <StepsPanel/>
+  </div>;
+}
+
+function AutoProductInfo({cnt,setCnt}){
+  const [rk,setRk]=useState(0);
+  const reset=(key,val)=>{setCnt(p=>({...p,[key]:val}));setRk(k=>k+1);};
+  const [rk2,setRk2]=useState({sq:0,fmc:0,bmc:0,fmt:0});
+  const clr="#c09020";
+  const CBtn=({onClick})=><td style={{paddingLeft:8}}><div onClick={onClick} style={{
+    padding:"4px 14px",background:clr,color:"#fff",fontWeight:700,fontSize:12,
+    cursor:"pointer",border:"1px solid #906818",textAlign:"center",whiteSpace:"nowrap"}}>CLEAR</div></td>;
+  return <div style={{border:"1px solid #888",padding:"6px 10px",width:"75%"}}>
+    <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>PRODUCT INFO</div>
+    <table cellSpacing={0} cellPadding={0}><tbody>
+      <tr>
+        <td style={{verticalAlign:"top",paddingRight:24}}>
+          <table cellSpacing={0} cellPadding={0}><tbody>
+            {[["MOUNT CYCLE TIME","0.0","S"],["RUNNING TIME","0:00:00",""],["WPH","0","sheet"],["---","0",""]].map((r,i)=>
+              <tr key={i}>
+                <td style={{fontWeight:700,fontSize:11,paddingRight:8,paddingBottom:6,whiteSpace:"nowrap"}}>{r[0]}</td>
+                <td style={{paddingBottom:6}}><IF v={r[1]} w={55}/></td>
+                <td style={{fontSize:10,paddingLeft:4,paddingBottom:6}}>{r[2]}</td></tr>)}
+            {[["FLUX MASK\nCLEAN FREQUENCY","0","0"],["BALL MASK\nCLEAN FREQUENCY","0","0"]].map((r,i)=>
+              <tr key={"c"+i}>
+                <td style={{fontWeight:700,fontSize:10,paddingRight:8,paddingBottom:6,whiteSpace:"pre-wrap",lineHeight:"13px"}}>{r[0]}</td>
+                <td colSpan={2} style={{paddingBottom:6,fontSize:10,whiteSpace:"nowrap"}}><IF v={r[1]} w={30}/> / <IF v={r[2]} w={30}/> count</td></tr>)}
+          </tbody></table>
+        </td>
+        <td style={{verticalAlign:"top"}}>
+          <table cellSpacing={0} cellPadding={0}><tbody>
+            {[["INPUT WAFER",cnt.iw,"iw"],["OK WAFER",cnt.ok,"ok"],["NG WAFER",cnt.ng,"ng"]].map(r=>
+              <tr key={r[0]+rk}>
+                <td style={{fontWeight:700,fontSize:11,paddingRight:8,paddingBottom:14,whiteSpace:"nowrap"}}>{r[0]}</td>
+                <td style={{paddingBottom:14}}><IF v={r[1]} w={55}/></td>
+                <td style={{fontSize:10,paddingLeft:4,paddingRight:8,paddingBottom:14}}>sheet</td>
+                <CBtn onClick={()=>reset(r[2],0)}/></tr>)}
+            {[["FLUX SQUEEGEE COUNT","0","9999","sq"],["FLUX MASK CLEANNING COUNT","0","0","fmc"],
+              ["BALL MASK CLEANNING COUNT","0","9999","bmc"],["FLUX MANAGEMENT TIMER","35366:47","0:00","fmt"]].map((r,i)=>
+              <React.Fragment key={r[3]+rk2[r[3]]}>
+                <tr><td colSpan={4} style={{fontWeight:700,fontSize:11,paddingTop:i?6:0,paddingBottom:3}}>{r[0]}</td></tr>
+                <tr><td colSpan={3} style={{paddingBottom:10,fontSize:10,whiteSpace:"nowrap"}}><IF v={r[1]} w={55}/> / <IF v={r[2]} w={55}/> count</td>
+                  <CBtn onClick={()=>setRk2(p=>({...p,[r[3]]:p[r[3]]+1}))}/></tr>
+              </React.Fragment>)}
+          </tbody></table>
+        </td>
+      </tr>
+    </tbody></table>
+  </div>;
+}
+
+function AutoImage(){
+  return <div>
+    <div style={{display:"flex",gap:2}}>
+      {[1,2,3,4].map(n=>{
+        const hasFeed=n>=3;
+        return <div key={n} style={{flex:1,border:hasFeed?"2px solid #00c000":"1px solid "+C.brd}}>
+          <div style={{background:"#d0d0d0",padding:"2px 6px",fontSize:10,fontWeight:700}}>Camera{n} view window</div>
+          <div style={{display:"flex",gap:8,fontSize:9,padding:"1px 4px",background:"#e8e8e8",borderBottom:"1px solid "+C.brd}}>
+            <span>File</span><span>Image</span><span>View</span><span>Command</span></div>
+          <div style={{height:220,background:"#000",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+            {hasFeed?<div style={{color:"#555",fontSize:10,position:"absolute",bottom:4,left:4}}>
+              {n===3?"Ball mask pattern":"Wafer PAD view"}</div>
+             :<span style={{color:"#333"}}>No Signal</span>}
+            {n===3&&<div style={{position:"absolute",bottom:8,left:8,fontSize:8,color:"#0f0"}}>(466.0,-85.0)=83.0</div>}
+            {n===4&&<>
+              <div style={{position:"absolute",top:"40%",left:"45%",width:30,height:30,borderRadius:"50%",border:"2px solid red"}}/>
+              <div style={{position:"absolute",top:"35%",left:"60%",color:"red",fontSize:9}}>Score<br/>0.00</div>
+              <div style={{position:"absolute",bottom:8,left:8,fontSize:8,color:"#0f0"}}>(-576.0,285.0)=255.0</div>
+            </>}
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",background:"#e8e8e8",padding:"1px 4px",fontSize:9}}>
+            {hasFeed&&<span style={{fontSize:8}}>{n===3?"(466.0,-85.0)=83.0":"(-576.0,285.0)=255.0"}</span>}
+            {hasFeed&&<span style={{fontSize:8}}>X 1.00</span>}
+            <span style={{marginLeft:"auto"}}>Show</span>
+          </div>
+        </div>;})}
+    </div>
+    <div style={{minHeight:180}}/>
+    <div style={{textAlign:"right",fontWeight:700,fontSize:10,marginBottom:6}}>CAMERA VIEW SIZE CHG</div>
+    <div style={{display:"flex",justifyContent:"flex-end",gap:6}}>
+      <Btn t={"F WAFER\nCAM L/S"} c={C.grn}/><Btn t={"F MASK\nCAM L/S"} c={C.grn}/>
+      <Btn t={"B WAFER\nCAM L/S"} c={C.red}/><Btn t={"B MASK\nCAM L/S"} c={C.red}/></div>
+  </div>;
+}
+
+function AutoTime(){
+  const TRow=({l,v})=><div style={{display:"flex",alignItems:"center",gap:4,marginBottom:6}}>
+    <span style={{fontWeight:700,fontSize:10,minWidth:130,lineHeight:"13px"}}>{l}</span>
+    <div style={{width:60,padding:"2px 4px",border:"1px solid #a0a0a0",background:C.wh,fontSize:11,textAlign:"right"}}>{v}</div>
+    <span style={{fontSize:10,fontWeight:700}}>S</span></div>;
+  return <div style={{display:"flex",gap:60,padding:"20px 10px"}}>
+    <div>
+      <TRow l={"WAFER THICK\nMEASURE FINISH"} v="0.0"/>
+      <TRow l={"CALCULATION\nFINISH"} v="0.0"/>
+      <TRow l={"MASK VACUUM\nFINISH"} v="0.0"/>
+      <TRow l={"BALL MOUNT\nFINISH"} v="0.0"/>
+      <TRow l={"VACUUM REMOVE\nFINISH"} v="0.0"/>
+      <TRow l={"REMOVE NOZZLE\nFINISH"} v="0.0"/>
+      <TRow l="WAFER PUT FINISH" v="0.0"/>
+      <div style={{height:12}}/>
+      <TRow l={"MASK CLEANING\nFINISH"} v="0.0"/>
+      <TRow l="MOUNT CYCLE" v="0.0"/>
+    </div>
+    <div>
+      <TRow l={"BALL WAFER EXIST\nTIME"} v="0.0"/>
+      <div style={{height:72}}/>
+      <TRow l="MOUNT TIME" v="15.4"/>
+      <TRow l={"VACUUM REMOVE\nTIME"} v="17.0"/>
+      <TRow l={"REMOVE NOZZLE\nTIME"} v="14.8"/>
+      <div style={{height:30}}/>
+      <TRow l={"MASK CLEANING\nTIME"} v="0.0"/>
+      <TRow l="MOUNT CYCLE" v="0.0"/>
+    </div>
+  </div>;
+}
+
+function AutoPosCheck(){
+  const V=({v,w=55})=><input style={{width:w,padding:"2px 4px",border:"1px solid #a0a0a0",background:C.wh,fontSize:10,textAlign:"right"}} defaultValue={v}/>;
+  const MarkRow=({label,dx,dy,rx,ry})=><tr>
+    <td rowSpan={2} style={{fontWeight:700,fontSize:10,paddingRight:8,verticalAlign:"middle",lineHeight:"13px",whiteSpace:"pre-wrap"}}>{label}</td>
+    <td style={{fontWeight:700,fontSize:9,paddingRight:4}}>DESIGN POS</td>
+    <td style={{padding:"1px 2px"}}><V v={dx}/></td><td style={{padding:"1px 2px"}}><V v={dy}/></td></tr>;
+  const RecogRow=({rx,ry})=><tr>
+    <td style={{fontWeight:700,fontSize:9,paddingRight:4}}>RECOG POS</td>
+    <td style={{padding:"1px 2px"}}><V v={rx}/></td><td style={{padding:"1px 2px"}}><V v={ry}/></td></tr>;
+  const DevRow=({label,x,y,t})=><tr>
+    <td style={{fontWeight:700,fontSize:10,paddingRight:8}}>{label}</td>
+    <td style={{padding:"2px"}}><V v={x}/></td><td style={{padding:"2px"}}><V v={y}/></td>
+    <td style={{padding:"2px"}}><V v={t}/></td></tr>;
+  return <div style={{padding:"8px 20px"}}>
+    <div style={{fontWeight:700,fontSize:12,marginBottom:12}}>POS CHECK CALCULATION</div>
+    {/* Upper section: MARK data */}
+    <div style={{display:"flex",gap:40}}>
+      {/* FLUX PARTS */}
+      <table cellSpacing={0} cellPadding={0}><tbody>
+        <tr><td/><td/><td style={{fontWeight:700,fontSize:9,textAlign:"center",paddingBottom:4}}>X(mm)</td>
+          <td style={{fontWeight:700,fontSize:9,textAlign:"center",paddingBottom:4}}>Y(mm)</td></tr>
+        <MarkRow label={"FLUX PARTS\nWAFER MARK1"} dx="65.519" dy="9.405"/>
+        <RecogRow rx="0.000" ry="0.000"/>
+        <tr><td colSpan={4} style={{height:8}}/></tr>
+        <MarkRow label={"FLUX PARTS\nWAFER MARK2"} dx="-65.519" dy="-9.405"/>
+        <RecogRow rx="0.000" ry="0.000"/>
+        <tr><td colSpan={4} style={{height:8}}/></tr>
+        <MarkRow label={"FLUX PARTS\nMASK MARK1"} dx="65.519" dy="9.405"/>
+        <RecogRow rx="0.000" ry="0.000"/>
+        <tr><td colSpan={4} style={{height:8}}/></tr>
+        <MarkRow label={"FLUX PARTS\nMASK MARK2"} dx="-65.519" dy="-9.405"/>
+        <RecogRow rx="0.000" ry="0.000"/>
+      </tbody></table>
+      {/* BALL PARTS */}
+      <table cellSpacing={0} cellPadding={0}><tbody>
+        <tr><td/><td/><td style={{fontWeight:700,fontSize:9,textAlign:"center",paddingBottom:4}}>X(mm)</td>
+          <td style={{fontWeight:700,fontSize:9,textAlign:"center",paddingBottom:4}}>Y(mm)</td></tr>
+        <MarkRow label={"BALL PARTS\nWAFER MARK1"} dx="65.519" dy="9.405"/>
+        <RecogRow rx="-0.893" ry="0.849"/>
+        <tr><td colSpan={4} style={{height:8}}/></tr>
+        <MarkRow label={"BALL PARTS\nWAFER MARK2"} dx="-65.519" dy="-9.405"/>
+        <RecogRow rx="-0.684" ry="-0.624"/>
+        <tr><td colSpan={4} style={{height:8}}/></tr>
+        <MarkRow label={"BALL PARTS\nMASK MARK1"} dx="65.519" dy="9.405"/>
+        <RecogRow rx="-0.058" ry="0.039"/>
+        <tr><td colSpan={4} style={{height:8}}/></tr>
+        <MarkRow label={"BALL PARTS\nMASK MARK2"} dx="-65.519" dy="-9.405"/>
+        <RecogRow rx="-0.060" ry="0.048"/>
+      </tbody></table>
+    </div>
+    {/* Spacer */}
+    <div style={{height:24}}/>
+    {/* Lower section: DEV data */}
+    <div style={{display:"flex",gap:40}}>
+      {/* FLUX */}
+      <table cellSpacing={0} cellPadding={0}><tbody>
+        <tr><td/><td style={{fontWeight:700,fontSize:9,textAlign:"center",paddingBottom:4}}>X(mm)</td>
+          <td style={{fontWeight:700,fontSize:9,textAlign:"center",paddingBottom:4}}>Y(mm)</td>
+          <td style={{fontWeight:700,fontSize:9,textAlign:"center",paddingBottom:4}}>θ(degree)</td></tr>
+        <DevRow label="FLUX WAFER DEV" x="0.000" y="0.000" t="0.0000"/>
+        <DevRow label="FLUX MASK DEV" x="0.000" y="0.000" t="0.0000"/>
+        <DevRow label={"FLUX CORRECT AMOUNT"} x="0.000" y="0.000" t="0.0000"/>
+        <DevRow label="FLUX PRINT POS PARA" x="-675.000" y="0.000" t="0.0000"/>
+        <DevRow label="F-STAGE CURRENT POS" x="0.000" y="0.000" t="0.0000"/>
+      </tbody></table>
+      {/* BALL */}
+      <table cellSpacing={0} cellPadding={0}><tbody>
+        <tr><td/><td style={{fontWeight:700,fontSize:9,textAlign:"center",paddingBottom:4}}>X(mm)</td>
+          <td style={{fontWeight:700,fontSize:9,textAlign:"center",paddingBottom:4}}>Y(mm)</td>
+          <td style={{fontWeight:700,fontSize:9,textAlign:"center",paddingBottom:4}}>θ(degree)</td></tr>
+        <DevRow label="BALL WAFER DEV" x="-0.788" y="0.112" t="0.6443"/>
+        <DevRow label="BALL MASK DEV" x="0.660" y="-0.008" t="-0.1072"/>
+        <DevRow label={"BALL CORRECT AMOUNT"} x="1.447" y="-0.131" t="-0.7515"/>
+        <DevRow label={"BALL MOUNT POS  PARA"} x="675.000" y="0.000" t="0.0000"/>
+        <DevRow label="B-STAGE CURRENT POS" x="676.441" y="0.018" t="-0.7444"/>
+      </tbody></table>
+    </div>
+  </div>;
+}
+
+// ══════ 4. MANUAL ══════
+function ManualTab(){
+  const [pg,setPg]=useState("TRANSFER");
+  return <div style={{display:"flex",gap:8}}>
+    <div style={{flex:1}}>
+      {pg==="TRANSFER"&&<ManualTransfer/>}
+      {pg==="FLUX PARTS"&&<ManualFluxParts/>}
+      {pg==="BALL PARTS"&&<ManualBallParts/>}
+      {pg==="MOTOR"&&<ManualMotorPage/>}
+      {pg==="I/O"&&<ManualIO/>}
+    </div>
+    <NavPanel items={["TRANSFER","FLUX PARTS","BALL PARTS","MOTOR","I/O"]} active={pg} onSelect={setPg}/>
+  </div>;
+}
+function ManualTransfer(){
+  return <div style={{display:"flex",gap:8}}>
+    <div style={{flex:1}}>
+      {/* TRANSFER label */}
+      <div style={{border:"1px solid #888",padding:"4px 20px",display:"inline-block",fontWeight:700,fontSize:12,marginBottom:10,background:C.body}}>TRANSFER</div>
+      {/* LOAD PORT */}
+      <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>LOAD PORT</div>
+      <div style={{display:"flex",gap:6,marginBottom:24}}>
+        <Btn t={"LOAD PORT\nLOAD"} c={C.grn}/><Btn t={"LOAD PORT\nMAP RESULT"} c={C.grn}/><Btn t={"LOAD PORT\nUNLOAD"} c={C.grn}/></div>
+      {/* ALIGNER */}
+      <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>ALIGNER</div>
+      <div style={{display:"flex",gap:6,marginBottom:24}}>
+        <Btn t={"GET\nPOS"} c={C.grn}/><Btn t={"GET/VAC\nON"} c={C.grn}/><Btn t={"ALIGNMENT\nPOSITION"} c={C.grn}/><Btn t={"ALIGNMENT\nGO"} c={C.grn}/>
+        <Btn t="PUT POS" c={C.grn}/><Btn t={"PUT/VAC\nOFF"} c={C.grn}/></div>
+      {/* M91/92 + SV102 side by side */}
+      <div style={{display:"flex",gap:40}}>
+        <div>
+          <div style={{fontWeight:700,fontSize:12,marginBottom:4}}>M91/92 WAFER ROBOT Zθ</div>
+          <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,marginBottom:4}}>
+            <span>SET</span><IF v="1" w={30}/><span>steps</span></div>
+          <div style={{display:"flex",gap:6,marginBottom:6}}>
+            <Btn t={"MZ\nPICK UP"} c={C.grn}/><Btn t={"ALIGNER\nPUT"} c={C.grn}/><Btn t={"F-PARTS\nPUT"} c={C.grn}/><Btn t={"B-PARTS\nPUT"} c={C.grn}/></div>
+          <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,marginBottom:4}}>
+            <span>SET</span><IF v="1" w={30}/><span>steps</span></div>
+          <div style={{display:"flex",gap:6}}>
+            <Btn t={"MZ\nSTORAGE"} c={C.grn}/><Btn t={"ALIGNER\nGET"} c={C.grn}/><Btn t={"F-PARTS\nGET"} c={C.grn}/><Btn t={"B-PARTS\nGET"} c={C.grn}/></div>
+        </div>
+        <div>
+          <div style={{fontWeight:700,fontSize:12,marginBottom:4}}>SV102 WAFER ROBOT VAC</div>
+          <div style={{display:"flex",gap:6,marginTop:20}}>
+            <Btn t={"VACUUM\nON"} c={C.grn}/><Btn t={"VACUUM\nOFF"} c={C.grn}/></div>
+        </div>
+      </div>
+      {/* M91 + M93 side by side */}
+      <div style={{display:"flex",gap:40,marginTop:20}}>
+        <div>
+          <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>M91 WAFER ROBOT Z</div>
+          <div style={{display:"flex",gap:6}}>
+            <Btn t={"START\nHEIGHT"} c={C.grn}/><Btn t={"END\nHEIGHT"} c={C.grn}/><Btn t={"VAC CHECK\nHEIGHT"} c={C.grn}/></div>
+        </div>
+        <div>
+          <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>M93 WAFER ROBOT R</div>
+          <div style={{display:"flex",gap:6}}>
+            <Btn t="ADVANCE" c={C.grn}/><Btn t="RECESSION" c={C.grn}/></div>
+        </div>
+      </div>
+    </div>
+    <StepsPanel/>
+  </div>;
+}
+function ManualFluxParts(){
+  const [sub,setSub]=useState("CAMERA/CLEANING");
+  return <div>
+    <SubTabs tabs={["TRANSFER","CAMERA/CLEANING","PRINT"]} active={sub} onSelect={setSub}/>
+    {sub==="TRANSFER"&&<div>
+      <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>M01/02/05 FLUX STAGE XYθ</div>
+      <div style={{display:"flex",gap:6,marginBottom:30}}>
+        <Btn t={"ROBOT\nGET POS"} c={C.grn}/><Btn t={"THICK\nMEASURE"} c={C.grn}/><Btn t={"INSPEC\nPOS"} c={C.grn}/>
+        <Btn t={"PRINT\nPOS"} c={C.grn}/><Btn t={"ROBOT\nPUT POS"} c={C.grn}/></div>
+      <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>M03/04 FLUX STAGE Z/ SUPPORT Z</div>
+      <div style={{display:"flex",gap:6,marginBottom:30}}>
+        <Btn t={"GET\nHEIGHT"} c={C.grn}/><Btn t={"GET/PUT\nHEIGHT"} c={C.grn}/><Btn t={"THICK MES\nREF"} c={C.grn}/>
+        <Btn t={"THICK\nMEASURE"} c={C.grn}/><Btn t={"INSPEC\nHEIGHT"} c={C.grn}/><Btn t={"PRINT\nHEIGHT"} c={C.grn}/><Btn t={"PRINT\nREF"} c={C.grn}/></div>
+      <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SV03/04/05 FLUX STAGE VACUUM</div>
+      <div style={{display:"flex",gap:6,marginBottom:30}}>
+        <Btn t={"STAGE\nVAC ON"} c={C.grn}/><Btn t={"STAGE\nVAC OFF"} c={C.grn}/></div>
+      {/* SV01 and SV02 side by side */}
+      <div style={{display:"flex",gap:60}}>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SV01 FLUX VACUUM PAD</div>
+          <div style={{display:"flex",gap:6}}><Btn t={"PAD\nUP"} c={C.grn}/><Btn t={"PAD\nDOWN"} c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SV02 FLUX VACUUM PAD</div>
+          <div style={{display:"flex",gap:6}}><Btn t={"PAD\nVAC ON"} c={C.grn}/><Btn t={"PAD\nVAC OFF"} c={C.grn}/></div></div>
+      </div>
+    </div>}
+    {sub==="CAMERA/CLEANING"&&<div style={{position:"relative",minHeight:600}}>
+      {/* Camera windows - top right */}
+      <div style={{position:"absolute",right:0,top:0,width:280}}>
+        {["Camera2","Camera1"].map(c=><div key={c} style={{border:"1px solid "+C.brd,marginBottom:8}}>
+          <div style={{background:"#d0d0d0",padding:"3px 6px",fontSize:10,fontWeight:700}}>{c} view window</div>
+          <div style={{display:"flex",gap:8,fontSize:9,padding:"2px 4px",background:"#e0e0e0",borderBottom:"1px solid "+C.brd}}>
+            <span>File</span><span>Image</span><span>View</span><span>Command</span></div>
+          <div style={{height:170,background:"#000"}}/><div style={{fontSize:9,textAlign:"right",padding:"2px 4px",background:"#e0e0e0"}}>Show</div></div>)}
+      </div>
+      {/* Main content - left side */}
+      <div style={{marginRight:300}}>
+        <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>M11/12 FLUX CAMERA XY</div>
+        {/* Row 1: MASK MARK + CAM11 on same line */}
+        <div style={{display:"flex",gap:4,alignItems:"flex-start",marginBottom:8}}>
+          <Btn t={"MASK MARK\n1 POS"} c={C.grn}/><Btn t={"MASK MARK\n2 POS"} c={C.grn}/><Btn t={"MASK MARK\nREF POS"} c={C.grn}/>
+          <div style={{marginLeft:30}}>
+            <div style={{fontSize:11,fontWeight:700,marginBottom:4}}>CAM11 FLUX MASK CAMERA &nbsp;&nbsp; No. <IF v="0" w={28}/></div>
+            <div style={{display:"flex",gap:6}}><Btn t="SEARCH" c={C.grn}/><Btn t={"SEARCH\nCLEAR"} c={C.ylw}/><Btn t="LIVE" c={C.grn}/></div></div>
+        </div>
+        {/* Row 2: WAFER MARK + CAM12 on same line */}
+        <div style={{display:"flex",gap:4,alignItems:"flex-start",marginBottom:8}}>
+          <Btn t={"WAFER MARK\n1 POS"} c={C.grn}/><Btn t={"WAFER MARK\n2 POS"} c={C.grn}/><Btn t={"WAFER MARK\nREF POS"} c={C.grn}/>
+          <div style={{marginLeft:30}}>
+            <div style={{fontSize:11,fontWeight:700,marginBottom:4}}>CAM12 FLUX WAFER CAMERA &nbsp;&nbsp; No. <IF v="0" w={28}/></div>
+            <div style={{display:"flex",gap:6}}><Btn t="SEARCH" c={C.grn}/><Btn t={"SEARCH\nCLEAR"} c={C.ylw}/><Btn t="LIVE" c={C.grn}/></div></div>
+        </div>
+        {/* Row 3: CAMERA AVOID left, PRINT POS CALC aligned under CAM */}
+        <div style={{display:"flex",alignItems:"flex-start",marginBottom:24}}>
+          <Btn t={"CAMERA\nAVOID"} c={C.grn}/>
+          <div style={{marginLeft:226}}><Btn t={"PRINT POS\nCALC"} c={C.pur}/></div>
+        </div>
+        {/* Cleaning */}
+        <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>M12 FLUX CLEANING Y</div>
+        <div style={{display:"flex",gap:6,marginBottom:16}}><Btn t={"CLEANING\nREAR"} c={C.grn}/><Btn t={"CLEANING\nFRONT"} c={C.grn}/></div>
+        <div style={{display:"flex",gap:40,marginBottom:16}}>
+          <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV21 CLEANING UNIT</div>
+            <div style={{display:"flex",gap:6}}><Btn t="UP" c={C.grn}/><Btn t="DOWN" c={C.grn}/></div></div></div>
+        <div style={{display:"flex",gap:40,marginBottom:16}}>
+          <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>M13 CLEANING SHEET FEED</div>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}><Btn t={"SHEET\nFEED"} c={C.grn}/><IF v="5" w={50}/></div></div>
+          <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV24 CLEANING SHEET VAC</div>
+            <div style={{display:"flex",gap:6}}><Btn t="ON" c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div></div>
+        <div style={{display:"flex",gap:40}}>
+          <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV23 CLEANING SHEET KEEP</div>
+            <div style={{display:"flex",gap:6}}><Btn t="ON" c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div>
+          <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV25/26 CLEAN FLUID SUPPLY</div><Btn t="ON" c={C.grn}/></div>
+          <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV27 AIR BLOW</div>
+            <div style={{display:"flex",gap:6}}><Btn t="ON" c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div></div>
+      </div>
+    </div>}
+    {sub==="PRINT"&&<div>
+      <div style={{fontWeight:700,fontSize:12,marginBottom:8}}>M07 FLUX HEAD Y</div>
+      <div style={{display:"flex",gap:6,marginBottom:6}}>
+        <Btn t={"WAIT\n(HOME)"} c={"#98e030"}/><Btn t={"START\n(FRONT)"} c={C.grn}/><Btn t={"END\n(REAR)"} c={C.grn}/></div>
+      <div style={{display:"flex",gap:6,marginBottom:50}}>
+        <div style={{width:96}}/><Btn t={"START\n(REAR)"} c={C.grn}/><Btn t={"END\n(FRONT)"} c={C.grn}/></div>
+      <div style={{display:"flex",gap:80}}>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:8}}>SV07,08,09 FRONT SQUEEGEE</div>
+          <div style={{display:"flex",gap:30}}><Btn t="DOWN" c={C.grn}/><Btn t="UP" c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:8}}>SV10,11,12 REAR SQUEEGEE</div>
+          <div style={{display:"flex",gap:30}}><Btn t="DOWN" c={C.grn}/><Btn t="UP" c={C.grn}/></div></div>
+      </div>
+    </div>}
+  </div>;
+}
+function ManualBallParts(){
+  const [sub,setSub]=useState("MOUNT");
+  return <div>
+    <SubTabs tabs={["TRANSFER","CAMERA/CLEANING","MOUNT","MONITOR"]} active={sub} onSelect={setSub}/>
+    {sub==="TRANSFER"&&<div>
+      <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>M21/22/25 BALL STAGE XYθ</div>
+      <div style={{display:"flex",gap:6,marginBottom:30}}>
+        <Btn t={"WAFER\nGET POS"} c={C.grn}/><Btn t={"THICK\nMEASURE"} c={C.grn}/><Btn t={"INSPEC\nPOS"} c={C.grn}/>
+        <Btn t={"MOUNT\nPOS"} c={C.grn}/><Btn t={"WAFER\nPUT POS"} c={C.grn}/><Btn t={"DOWNUNIT\nPUT POS"} c={C.grn}/>
+        <Btn t={"異物除去\n開始位置"} c={C.grn}/><Btn t={"異物除去\n終了位置"} c={C.grn}/></div>
+      <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>M23/24 BALL STAGE Z/ SUPPORT Z</div>
+      <div style={{display:"flex",gap:6,marginBottom:30}}>
+        <Btn t={"GET\nHEIGHT"} c={C.grn}/><Btn t={"GET/PUT\nHEIGHT"} c={C.grn}/><Btn t={"THICK MES\nREF"} c={C.pur}/>
+        <Btn t={"THICK\nMEASURE"} c={C.grn}/><Btn t={"INSPEC\nHEIGHT"} c={C.grn}/><Btn t={"MOUNT\nHEIGHT"} c={C.grn}/><Btn t={"MOUNT\nREF"} c={C.grn}/></div>
+      <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SV53-56 BALL STAGE VACUUM</div>
+      <div style={{display:"flex",gap:6,marginBottom:30}}>
+        <Btn t={"STAGE\nVAC ON"} c={C.grn}/><Btn t={"STAGE\nVAC OFF"} c={C.grn}/></div>
+      <div style={{display:"flex",gap:60}}>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SV57 BALL MASK VACUUM</div>
+          <div style={{display:"flex",gap:6}}><Btn t="ON" c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:6}}>異物除去 ブラシ</div>
+          <div style={{display:"flex",gap:6}}><Btn t="上昇" c={C.grn}/><Btn t="下降" c={C.grn}/></div></div></div>
+      <div style={{display:"flex",gap:60,marginTop:20}}>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SV51 BALL VACUUM PAD</div>
+          <div style={{display:"flex",gap:6}}><Btn t={"PAD\nUP"} c={C.grn}/><Btn t={"PAD\nDOWN"} c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SV52 BALL VACUUM PAD</div>
+          <div style={{display:"flex",gap:6}}><Btn t={"PAD\nVAC ON"} c={C.grn}/><Btn t={"PAD\nVAC OFF"} c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:6}}>異物除去 ブロー</div>
+          <div style={{display:"flex",gap:6}}><Btn t="ON" c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div></div>
+    </div>}
+    {sub==="CAMERA/CLEANING"&&<div style={{position:"relative",minHeight:600}}>
+      <div style={{position:"absolute",right:0,top:0,width:280}}>
+        {["Camera4","Camera3"].map(c=><div key={c} style={{border:"1px solid "+C.brd,marginBottom:8}}>
+          <div style={{background:"#d0d0d0",padding:"3px 6px",fontSize:10,fontWeight:700}}>{c} view window</div>
+          <div style={{display:"flex",gap:8,fontSize:9,padding:"2px 4px",background:"#e0e0e0",borderBottom:"1px solid "+C.brd}}>
+            <span>File</span><span>Image</span><span>View</span><span>Command</span></div>
+          <div style={{height:170,background:"#000"}}/><div style={{fontSize:9,textAlign:"right",padding:"2px 4px",background:"#e0e0e0"}}>Show</div></div>)}
+      </div>
+      <div style={{marginRight:300}}>
+        <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>M31/32 BALL CAMERA XY</div>
+        <div style={{display:"flex",gap:4,alignItems:"flex-start",marginBottom:8}}>
+          <Btn t={"MASK MARK\n1 POS"} c={C.grn}/><Btn t={"MASK MARK\n2 POS"} c={C.grn}/><Btn t={"MASK MARK\nREF POS"} c={C.grn}/>
+          <div style={{marginLeft:30}}>
+            <div style={{fontSize:11,fontWeight:700,marginBottom:4}}>CAM21 BALL MASK CAMERA &nbsp;&nbsp; No. <IF v="0" w={28}/></div>
+            <div style={{display:"flex",gap:6}}><Btn t="SEARCH" c={C.grn}/><Btn t={"SEARCH\nCLEAR"} c={C.ylw}/><Btn t="LIVE" c={C.grn}/></div></div></div>
+        <div style={{display:"flex",gap:4,alignItems:"flex-start",marginBottom:8}}>
+          <Btn t={"WAFERMARK\n1 POS"} c={C.grn}/><Btn t={"WAFERMARK\n2 POS"} c={C.grn}/><Btn t={"WAFERMARK\nREF POS"} c={C.grn}/>
+          <div style={{marginLeft:30}}>
+            <div style={{fontSize:11,fontWeight:700,marginBottom:4}}>CAM22 BALL WAFER CAMERA &nbsp;&nbsp; No. <IF v="0" w={28}/></div>
+            <div style={{display:"flex",gap:6}}><Btn t="SEARCH" c={C.grn}/><Btn t={"SEARCH\nCLEAR"} c={C.ylw}/></div></div></div>
+        <div style={{display:"flex",alignItems:"flex-start",marginBottom:24}}>
+          <Btn t={"CAMERA\nAVOID"} c={C.grn}/>
+          <div style={{marginLeft:226}}><Btn t={"MOUNT POS\nCALC"} c={C.pur}/></div></div>
+        <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>M32 BALL CLEANING Y</div>
+        <div style={{display:"flex",gap:6,marginBottom:16}}><Btn t={"CLEANING\nFRONT"} c={C.grn}/><Btn t={"CLEANING\nREAR"} c={C.grn}/></div>
+        <div style={{display:"flex",gap:40,marginBottom:16}}>
+          <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV71 CLEANING UNIT</div>
+            <div style={{display:"flex",gap:6}}><Btn t="UP" c={C.grn}/><Btn t="DOWN" c={C.grn}/></div></div></div>
+        <div style={{display:"flex",gap:40,marginBottom:16}}>
+          <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>M33 CLEANING SHEET FEED</div>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}><Btn t={"SHEET\nFEED"} c={C.grn}/><IF v="5" w={50}/></div></div>
+          <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV74 CLEANING SHEET VAC</div>
+            <div style={{display:"flex",gap:6}}><Btn t="ON" c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div></div>
+        <div style={{display:"flex",gap:40}}>
+          <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV73 CLEANING SHEET KEEP</div>
+            <div style={{display:"flex",gap:6}}><Btn t="ON" c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div>
+          <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV75/76 CLEAN FLUID SUPPLY</div><Btn t="ON" c={C.grn}/></div>
+          <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV77 AIR BLOW</div>
+            <div style={{display:"flex",gap:6}}><Btn t="ON" c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div></div>
+      </div>
+    </div>}
+    {sub==="MOUNT"&&<div>
+      <div style={{display:"flex",gap:40,marginBottom:8}}>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:4}}>M26/27 BALL XY</div>
+          <div style={{display:"flex",gap:4,marginBottom:4}}>
+            <Btn t={"B-SUPPLY\nVAC POS"} c={C.grn}/><Btn t={"B-MOUNT\nPOS"} c={C.grn}/><Btn t={"VAC REM\nSTART POS"} c={C.grn}/>
+            <Btn t={"VAC REM\nSTART POS2"} c={C.grn}/><Btn t={"REM NOZZLE\nSTART POS"} c={C.grn}/><Btn t={"REM NOZZLE\nEXIT POS"} c={C.grn}/></div>
+          <div style={{fontSize:11,marginBottom:4}}>( <IF v="0" w={50}/> )</div>
+          <div style={{display:"flex",gap:4}}>
+            <Btn t="NEXT" c={C.grn}/><Btn t="NEXT" c={C.grn}/><Btn t="NEXT" c={C.grn}/>
+            <Btn t={"REM NOZZLE\nEND POS"} c={C.grn}/><Btn t={"MASK CHG\nREAR"} c={C.grn}/><Btn t={"HEAD CHG\nCENTER"} c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:4}}>SV81 MASK PUSH</div>
+          <div style={{display:"flex",gap:6}}><Btn t="UP" c={C.grn}/><Btn t="DOWN" c={C.grn}/></div></div></div>
+      <div style={{display:"flex",gap:40,marginTop:10,marginBottom:8}}>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:4}}>M28 BALLZ</div>
+          <div style={{display:"flex",gap:4}}>
+            <Btn t={"AVOID\nHEIGHT"} c={C.grn}/><Btn t={"B-SUPPLY\nHEIGHT"} c={C.grn}/><Btn t={"MOUNT\nHEIGHT"} c={C.grn}/>
+            <Btn t={"MNT AVOID\nHEIGHT"} c={C.grn}/><Btn t={"VAC REM\nHEIGHT"} c={C.grn}/><Btn t={"VAC REM\nHEIGHT2"} c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:4}}>M29 REMOVE NOZZLE Z</div>
+          <div style={{display:"flex",gap:4}}><Btn t={"AVOID\nHEIGHT"} c={C.grn}/><Btn t={"REM NOZZLE\nHEIGHT"} c={C.grn}/></div></div></div>
+      <div style={{display:"flex",gap:24,marginTop:10,marginBottom:8}}>
+        <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV62/63 NOZZLE VAC</div><div style={{display:"flex",gap:4}}><Btn t="ON" c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>M43-46 BALL VAC</div><div style={{display:"flex",gap:4}}><Btn t={"BLOWER\nON"} c={C.grn}/><Btn t={"BLOWER\nOFF"} c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>M42 REMOVE NOZZLE VAC</div><div style={{display:"flex",gap:4}}><Btn t={"BLOWER\nON"} c={C.grn}/><Btn t={"BLOWER\nOFF"} c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV64 REMOVE NOZZLE VIBRATION</div><div style={{display:"flex",gap:4}}><Btn t="ON" c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div></div>
+      <div style={{display:"flex",gap:24,marginBottom:8}}>
+        <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV58-60 BALL VACUUM(F/C/R)</div><div style={{display:"flex",gap:4}}><Btn t={"ON\n(ALL)"} c={C.grn}/><Btn t={"ON\n(DELAY)"} c={C.grn}/><Btn t="OFF" c={C.grn}/><Btn t={"OFF\n(DELAY)"} c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV61 HEAD VIBRATION</div><div style={{display:"flex",gap:4}}><Btn t="ON" c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div>
+        <div style={{marginTop:16}}><div style={{display:"flex",gap:4}}><Btn t={"C-CUP\nFILL POS"} c={C.grn}/><Btn t={"R/F CUP\nFILL POS"} c={C.grn}/></div></div></div>
+      <div style={{fontWeight:700,fontSize:12,marginTop:6,marginBottom:4}}>M34 BALL HOPPER</div>
+      <div style={{display:"flex",gap:3,marginBottom:8}}>
+        <Btn t={"AVOID\nLEFT"} c={C.grn}/>{[1,2,3,4,5,6,7,8,9].map(n=><Btn key={n} t={"TRAY"+n} c={C.grn}/>)}<Btn t={"AVOID\nRIGHT"} c={C.grn}/></div>
+      <div style={{display:"flex",gap:24,marginTop:6}}>
+        <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV89/90 BALL FILL &nbsp; SV86-88 BALLSUPPLY(F/C/R)</div>
+          <div style={{display:"flex",gap:4}}><Btn t="ON" c={C.grn}/><Btn t={"FRONT\nON"} c={C.grn}/><Btn t={"CENTER\nON"} c={C.grn}/><Btn t={"REAR\nON"} c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>SV85 BALL SUPPLY</div>
+          <div style={{display:"flex",gap:4}}><Btn t="UP" c={C.grn}/><Btn t="DOWN" c={C.grn}/></div></div>
+        <div><div style={{fontWeight:700,fontSize:11,marginBottom:4}}>UNIT21 SHUTTER-PROOF AIR</div>
+          <div style={{display:"flex",gap:4}}><Btn t={"MOUNT\nON"} c={C.grn}/><Btn t={"VAC REM\nON"} c={C.grn}/><Btn t={"REM NOZZLE\nON"} c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div></div>
+    </div>}
+    {sub==="MONITOR"&&<div style={{display:"flex",gap:20}}>
+      <div style={{flex:"0 0 300px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+          <span style={{fontWeight:700,fontSize:12}}>CAM23 MASK CAMERA</span><span style={{fontSize:11}}>No.</span><IF v="0" w={30}/></div>
+        <div style={{display:"flex",gap:4,marginBottom:4}}>
+          <Btn t={"MONITOR\n1POS"} c={C.grn}/><Btn t={"MONITOR\n2POS"} c={C.grn}/><Btn t={"MONITOR\n5-10 POS"} c={C.grn}/></div>
+        <div style={{display:"flex",gap:4,marginBottom:16}}>
+          <Btn t={"MONITOR\n3POS"} c={C.grn}/><Btn t={"MONITOR\n4POS"} c={C.grn}/></div>
+        <div style={{display:"flex",gap:30,marginBottom:12}}>
+          <div><div style={{fontWeight:700,fontSize:12,marginBottom:4}}>M28 BALL Z</div>
+            <Btn t={"AVOID\nHEIGHT"} c={C.grn}/></div>
+          <div><div style={{fontWeight:700,fontSize:12,marginBottom:4}}>M26/27 BALL XY</div>
+            <Btn t={"BALL MOUNT\nPOS"} c={C.blu}/></div></div>
+        <div style={{fontWeight:700,fontSize:12,marginBottom:4}}>M21/22/25 BALL STAGE XYθ</div>
+        <div style={{marginBottom:12}}><Btn t={"MOUNT\nPOS"} c={C.grn}/></div>
+        <div style={{fontWeight:700,fontSize:12,marginBottom:4}}>M23/24 BALL STAGE Z/ SUPPORT Z</div>
+        <div style={{display:"flex",gap:4,marginBottom:4}}>
+          <Btn t={"MOUNT\nHEIGHT"} c={C.grn}/><Btn t={"STAGE Z\n0.1mmUP"} c={C.grn}/><Btn t={"STAGE Z\n0.1mmDOWN"} c={C.grn}/></div>
+        <div style={{fontSize:10,marginBottom:14}}>※CAN NOT MOVE MORE MOUNT HEIGHT</div>
+        <div style={{display:"flex",gap:4}}>
+          <Btn t={"SCREEN\nCHG ←"} c={C.grn}/><Btn t={"SCREEN\nCHG →"} c={C.grn}/></div>
+      </div>
+      <div style={{flex:1}}>
+        <div style={{display:"flex",gap:6,marginBottom:10}}>
+          <Btn t="LOW SPEED" c={C.grn}/><Btn t="PITCH" c={C.amb}/></div>
+        <div style={{fontWeight:700,fontSize:11,marginBottom:4}}>M21,22 BALL STAGE XY</div>
+        <div style={{fontSize:11,marginBottom:4}}>M21 <IF v="0.005" w={50}/> mm &nbsp; M22 <IF v="0.005" w={50}/> mm</div>
+        <div style={{fontWeight:700,fontSize:11,marginTop:8,marginBottom:4}}>M25 BALL STAGE θ</div>
+        <div style={{fontSize:11,marginBottom:10}}>M25 <IF v="0.0050" w={50}/> degree</div>
+        <div style={{fontWeight:700,fontSize:11,marginBottom:8}}>JOG/PITCH</div>
+        <div style={{border:"1px solid #aaa",padding:16,display:"inline-block"}}>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:9,width:16}}></span><Btn t="↑" c={C.grn}/><span style={{fontSize:9}}>+</span></div>
+            <div style={{display:"flex",alignItems:"center",gap:20}}>
+              <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:9}}>-</span><Btn t="←" c={C.grn}/></div>
+              <div style={{display:"flex",alignItems:"center",gap:6}}><Btn t="→" c={C.grn}/><span style={{fontSize:9}}>+</span></div></div>
+            <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:9,width:16}}></span><Btn t="↓" c={C.grn}/><span style={{fontSize:9}}>-</span></div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:6,marginTop:12}}>
+          <Btn t="CLOCKWISE" c={C.grn}/><Btn t={"COUNTER\nCLOCKWISE"} c={C.grn}/></div>
+      </div>
+    </div>}
+  </div>;
+}
+function ManualIO(){
+  const [sub,setSub]=useState("I/O2");
+  const [bits]=useState(()=>{const b={};for(let i=0;i<600;i++)b[i]=Math.random()>0.55;return b;});
+  const BitGrid=({label,idx})=><div style={{marginBottom:12,minWidth:170}}>
+    <div style={{fontWeight:700,fontSize:11,marginBottom:3}}>{label}</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(8,26px)",gap:1}}>
+      {Array.from({length:16},(_,i)=><div key={i} style={{width:26,height:22,display:"flex",alignItems:"center",justifyContent:"center",
+        fontSize:10,fontWeight:700,border:"1px solid #888",background:bits[(idx*16+i)%600]?"#00c000":"#e0e0e0",
+        color:bits[(idx*16+i)%600]?"#fff":"#666"}}>{i+1}</div>)}</div></div>;
+  const io2=[["X00E0-X00EF","X0130-X013F","X02C0-X02CF"],["X00F0-X00FF","X0220-X022F","X02D0-X02DF"],
+    ["X0100-X010F","X0230-X023F","X0330-X033F"],["X0110-X011F","X0240-X024F","X0340-X034F"],["X0120-X012F","X0250-X025F"]];
+  return <div><SubTabs tabs={["I/O1","I/O2"]} active={sub} onSelect={setSub}/>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 30px"}}>
+      {io2.map((row,ri)=>row.map((label,ci)=><BitGrid key={label} label={label} idx={ri*3+ci}/>))}</div></div>;
+}
+function ManualMotorPage(){
+  const [grp,setGrp]=useState("M01 - M03");
+  const [jog,setJog]=useState("LOW SPEED");
+  const grps=["M01 - M03","M04 - M06","M07 - M11","M12 - M14","M21 - M23","M24 - M26","M27 - M29","M30 - M32","M33 - M35","M91 - M93"];
+  const MD={"M01 - M03":[["M01","FLUX STAGE X","X"],["M02","FLUX STAGE Y","Y"],["M03","FLUX STAGE Z","Z"]],
+    "M04 - M06":[["M04","FLUX SUPPORT Z","Z"],["M05","FLUX STAGE θ","θ"],["M06","---",""]],
+    "M07 - M11":[["M07","SQUEEGEE Y","Y"],["M11","FLUX CAM X","X"]],
+    "M12 - M14":[["M12","FLUX CAM Y","Y"],["M14","AUTO SUPPLY X","X"]],
+    "M21 - M23":[["M21","BALL STAGE X","X"],["M22","BALL STAGE Y","Y"],["M23","BALL STAGE Z","Z"]],
+    "M24 - M26":[["M24","BALL SUPPORT Z","Z"],["M25","BALL STAGE θ","θ"],["M26","BALL X","X"]],
+    "M27 - M29":[["M27","BALL Y","Y"],["M28","BALL Z","Z"],["M29","REM NOZZLE Z","Z"]],
+    "M30 - M32":[["M30","MASK CAM X","X"],["M31","BALL CAM X","X"],["M32","BALL CAM Y","Y"]],
+    "M33 - M35":[["M33","---",""],["M34","BALL SUPPLY X","X"],["M35","---",""]],
+    "M91 - M93":[["M91","ROBOT Z","Z"],["M92","ROBOT θ","θ"],["M93","ROBOT R","R"]]};
+  const motors=MD[grp]||[];
+  const Sensor=({t,c})=><div style={{padding:"1px 6px",background:c,color:C.wh,fontWeight:700,fontSize:10,border:"1px solid #666",display:"inline-block"}}>{t}</div>;
+  return <div>
+    <div style={{display:"flex",gap:2,marginBottom:8,flexWrap:"wrap"}}>
+      {grps.map(g=><div key={g} onClick={()=>setGrp(g)} style={{padding:"5px 14px",fontSize:11,fontWeight:grp===g?700:400,border:"1px solid "+C.brd,background:grp===g?C.body:C.subOff,cursor:"pointer",borderRadius:"2px 2px 0 0"}}>{g}</div>)}</div>
+    <div style={{display:"flex",gap:20}}>
+      {/* Left: SELECT + Camera */}
+      <div style={{width:300}}>
+        <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SELECT</div>
+        <div style={{display:"flex",gap:4,marginBottom:12}}>
+          <Btn t={"HIGH\nSPEED"} c={"#c08000"} onClick={()=>setJog("HIGH")}/>
+          <Btn t={"LOW\nSPEED"} c={C.grn} onClick={()=>setJog("LOW SPEED")}/>
+          <Btn t="PITCH" c={C.amb} onClick={()=>setJog("PITCH")}/></div>
+        <div style={{border:"1px solid "+C.brd,marginBottom:12}}>
+          <div style={{background:"#d0d0d0",padding:"3px 6px",fontSize:11,fontWeight:700}}>Camera1 view window</div>
+          <div style={{display:"flex",gap:8,fontSize:9,padding:"2px 4px",background:"#e0e0e0",borderBottom:"1px solid "+C.brd}}>
+            <span>File</span><span>Image</span><span>View</span><span>Command</span></div>
+          <div style={{height:260,background:"#000"}}/><div style={{fontSize:9,textAlign:"right",padding:"2px 4px",background:"#e0e0e0"}}>Show window</div></div>
+        <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>CAMERA SELECT</div>
+        <div style={{display:"flex",gap:4,marginBottom:4}}>
+          <Btn t={"F Wafer\nCAM12"} c={C.grn}/><Btn t={"F Mask\nCAM11"} c={C.grn}/><Btn t={"B Wafer\nCAM22"} c={C.grn}/><Btn t={"B Mask\nCAM21"} c={C.grn}/></div>
+        <Btn t="CAM12 LIVE" c={C.grn}/>
+      </div>
+      {/* Right: Motor details - no overlap */}
+      <div style={{flex:1}}>
+        {motors.map((m,mi)=><div key={m[0]} style={{marginBottom:14,paddingBottom:12,borderBottom:"1px solid #ccc"}}>
+          <div style={{fontWeight:700,fontSize:14,marginBottom:6}}>{m[0]} {m[1]}</div>
+          <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+            <div style={{fontSize:12,flex:1}}>
+              <div style={{display:"flex",gap:6,marginBottom:3,alignItems:"center"}}>
+                <span style={{width:24,fontWeight:700}}>{m[2]}</span><IF v="0.000" w={60}/><span>mm</span>
+                <span style={{fontWeight:700,marginLeft:20}}>RELATIVE</span><IF v={mi===0?"0.500":"0.100"} w={60}/></div>
+              <div style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
+                <span style={{width:24,fontWeight:700}}>Δ{m[2]}</span><IF v="0.000" w={60}/><span>mm</span>
+                <span style={{marginLeft:20,fontSize:11}}>M-AMOUNT</span></div>
+              <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
+                <span style={{fontSize:11}}>ERROR CODE</span><IF v={mi===0?"104":"105"} w={50}/>
+                <Btn t="FREE" c={C.grn}/><Btn t={"HOME\nRETURN"} c={C.blu}/><Btn t={"RELATIVE\nMOVE"} c={C.blu}/></div>
+              <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}>
+                <span style={{fontSize:11}}>WARNING CODE</span><IF v="0" w={50}/></div>
+              <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                <span style={{fontSize:11}}>SENSOR</span>
+                <Sensor t="+OT" c="#888"/><Sensor t="-OT" c="#888"/><Sensor t="ORG" c="#e08000"/><Sensor t="NORG" c="#c00000"/></div>
+            </div>
+            <div style={{display:"flex",gap:4,paddingTop:10}}>
+              {m[2]==="Y"||m[2]==="Z"?<div style={{display:"flex",flexDirection:"column",gap:4}}><Btn t="↑" c={C.grn}/><Btn t="↓" c={C.grn}/></div>
+                    :<><Btn t="←" c={C.grn}/><Btn t="→" c={C.grn}/></>}</div>
+          </div>
+        </div>)}
+      </div>
+    </div>
+  </div>;
+}
+// ══════ 5. MAINTENANCE ══════
+function MaintenanceTab(){
+  const [sub,setSub]=useState("1CYCLE");
+  const [log,setLog]=useState([]);
+  const add=m=>{setLog(p=>[{t:new Date().toLocaleTimeString(),m},...p].slice(0,20));};
+  const SB=({t,c=C.blu})=><div style={{marginBottom:2}}><Btn t={t} c={c} s onClick={()=>add(t.replace(/\n/g," "))}/></div>;
+  return <div>
+    <SubTabs tabs={["SET UP","1CYCLE"]} active={sub} onSelect={setSub}/>
+    {sub==="1CYCLE"?<div style={{display:"flex",gap:6}}>
+      {/* FLUX PARTS */}
+      <div style={{minWidth:130}}>
+        <div style={{fontWeight:700,fontSize:10,marginBottom:4,padding:"2px 4px",background:"#d0d0d0"}}>FLUX PARTS</div>
+        <div style={{display:"flex",gap:2,marginBottom:2}}><Btn t={"STAGE REF\nMEASURE"} c={C.blu} s onClick={()=>add("STAGE REF MEASURE")}/><Btn t={"WAFER THICK\nMEASURE"} c={C.blu} s onClick={()=>add("WAFER THICK MEASURE")}/></div>
+        <div style={{display:"flex",gap:2,marginBottom:2}}><Btn t="CLEAR" c={C.ylw} s/><Btn t="CLEAR" c={C.ylw} s/></div>
+        <div style={{display:"flex",gap:2,marginBottom:2}}><Btn t={"MASK MARK\nSEARCH"} c={C.blu} s/><Btn t={"WAFERMARK\nSEARCH"} c={C.blu} s/></div>
+        <SB t={"FLUX PRINT\nPOS MOVE"}/><SB t={"FLUX\nPRINT"}/>
+        <SB t={"MASK REAR\nCLEANING"} c={C.grn}/>
+        <div style={{fontSize:9,fontWeight:700,marginTop:6}}>FLUX SQUEEGEE COUNT</div>
+        <div style={{display:"flex",gap:3,alignItems:"center",fontSize:9}}><IF v="0" w={30}/><span>/</span><IF v="9999" w={35}/><span>count</span></div>
+      </div>
+      {/* WAFER ROBOT PARTS */}
+      <div style={{minWidth:240}}>
+        <div style={{fontWeight:700,fontSize:10,marginBottom:4,padding:"2px 4px",background:"#d0d0d0"}}>WAFER ROBOT PARTS</div>
+        <div style={{display:"flex",alignItems:"center",gap:3,marginBottom:2}}><IF v="0" w={24}/><span style={{fontSize:8}}>steps</span>
+          {["F-PARTS\nPUT","MZ\nPICK UP","ALIGNER\nPUT","B-PARTS\nPUT"].map((b,i)=><Btn key={i} t={b} c={C.blu} s onClick={()=>add(b.replace(/\n/g," "))}/>)}</div>
+        <div style={{display:"flex",alignItems:"center",gap:3,marginBottom:6}}><IF v="0" w={24}/><span style={{fontSize:8}}>steps</span>
+          {["F-PARTS\nGET","MZ\nSTORAGE","ALIGNER\nGET","B-PARTS\nGET"].map((b,i)=><Btn key={i} t={b} c={C.blu} s onClick={()=>add(b.replace(/\n/g," "))}/>)}</div>
+        <div style={{marginBottom:6}}><Btn t={"DOWN UNIT\nPUT"} c={C.grn} s/></div>
+        <div style={{display:"flex",gap:16}}>
+          <div><div style={{fontWeight:700,fontSize:9,marginBottom:2}}>LOAD PORT</div>
+            <SB t="LOAD" c={C.grn}/><SB t="MAP\nRESULT" c={C.grn}/><SB t="UNLOAD" c={C.grn}/></div>
+          <div><div style={{fontWeight:700,fontSize:9,marginBottom:2}}>ALIGNER</div>
+            <SB t={"ALIGNMENT\nPOSITION"} c={C.blu}/><SB t={"ALIGNMENT\nGO"} c={C.blu}/></div>
+          <div><div style={{fontWeight:700,fontSize:9,marginBottom:2}}>CAM23 MASK CAMERA</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:2,marginBottom:2}}>
+              <Btn t={"MONITOR1\nPOS"} c={C.grn} s/><Btn t={"MONITOR2\nPOS"} c={C.grn} s/>
+              <Btn t={"MONITOR3\nPOS"} c={C.grn} s/><Btn t={"MONITOR4\nPOS"} c={C.grn} s/></div>
+            <div style={{fontSize:9,marginBottom:2}}>No. <IF v="0" w={24}/></div>
+            <Btn t={"MONITOR\n5-10 POS"} c={C.grn} s/></div></div>
+      </div>
+      {/* BALL PARTS */}
+      <div style={{minWidth:130}}>
+        <div style={{fontWeight:700,fontSize:10,marginBottom:4,padding:"2px 4px",background:"#d0d0d0"}}>BALL PARTS</div>
+        <div style={{display:"flex",gap:2,marginBottom:2}}><Btn t={"STAGE REF\nMEASURE"} c={C.blu} s/><Btn t={"WAFER THICK\nMEASURE"} c={C.blu} s/></div>
+        <div style={{display:"flex",gap:2,marginBottom:2}}><Btn t="CLEAR" c={C.amb} s/><Btn t="CLEAR" c={C.amb} s/></div>
+        <div style={{display:"flex",gap:2,marginBottom:2}}><Btn t={"MASK MARK\nSEARCH"} c={C.blu} s/><Btn t={"WAFERMARK\nSEARCH"} c={C.blu} s/></div>
+        <div style={{display:"flex",gap:2,marginBottom:2}}><Btn t={"BALL MOUNT\nPOS MOVE"} c={C.blu} s/><Btn t={"BALL\nMOUNT"} c={C.blu} s/></div>
+        <div style={{display:"flex",gap:2,marginBottom:2}}><Btn t={"VACUUM\nREMOVE1"} c={C.blu} s/><Btn t={"VACUUM\nREMOVE2"} c={C.blu} s/></div>
+        <div style={{display:"flex",gap:2,marginBottom:2}}><Btn t={"NOZZLE\nREMOVE"} c={C.blu} s/><Btn t={"BALL\nRELEASE"} c={C.blu} s/></div>
+        <div style={{display:"flex",gap:2}}><Btn t={"MASK REAR\nCLEANING"} c={C.grn} s/><Btn t={"TRAY BALL\nSUPPLY"} c={C.grn} s/></div>
+      </div>
+      <StepsPanel/>
+    </div>:<div>
+      {/* SET UP */}
+      <div style={{display:"flex",gap:30}}>
+        <div>
+          <div style={{fontWeight:700,fontSize:10,marginBottom:4,padding:"2px 4px",background:"#d0d0d0"}}>FLUX PARTS</div>
+          <div style={{fontWeight:700,fontSize:9,marginBottom:2}}>M07 FLUX Y</div>
+          <div style={{display:"flex",gap:3,marginBottom:8}}><Btn t={"MASK CHG\nPOSITION"} c={C.blu} s/><Btn t={"HEAD CHG\nPOSITION"} c={C.blu} s/></div>
+          <div style={{display:"flex",gap:3,marginBottom:16}}><Btn t={"START\n(FRONT)"} c={C.grn} s/><Btn t={"END\n(REAR)"} c={C.grn} s/></div>
+          <div style={{fontWeight:700,fontSize:9,marginBottom:2}}>1CYCLE</div>
+          <div style={{display:"flex",gap:3,marginBottom:16}}><Btn t={"MASK MARK\nSEARCH"} c={C.grn} s/><Btn t={"CAM11\nF MASK"} c={C.grn} s/></div>
+          <div style={{fontWeight:700,fontSize:9,marginBottom:2}}>M41 CLEANING</div>
+          <div style={{display:"flex",gap:3}}><Btn t={"BLOWER\nON"} c={C.grn} s/><Btn t={"BLOWER\nOFF"} c={C.grn} s/></div>
+        </div>
+        <div>
+          <div style={{fontWeight:700,fontSize:10,marginBottom:4,padding:"2px 4px",background:"#d0d0d0"}}>BALL PARTS</div>
+          <div style={{display:"flex",gap:16,marginBottom:6}}>
+            <div><div style={{fontWeight:700,fontSize:9}}>M26/27 BALL XY</div>
+              <div style={{display:"flex",gap:3,marginTop:2}}><Btn t={"MASK CHG\nPOS(R)"} c={C.blu} s/><Btn t={"HEAD CHG\nPOS(C)"} c={C.blu} s/></div></div>
+            <div><div style={{fontWeight:700,fontSize:9}}>M28 BALL Z</div><Btn t={"nAVOID\nPOS"} c={C.blu} s/></div>
+            <div><div style={{fontWeight:700,fontSize:9}}>M34 BALL SUPPLY</div><Btn t={"LEFT\nAVOID POS"} c={C.blu} s/></div></div>
+          <div style={{display:"flex",gap:16,marginBottom:8}}>
+            <div><div style={{fontWeight:700,fontSize:9}}>SV81 MASK PUSH</div><div style={{display:"flex",gap:3,marginTop:2}}><Btn t="UP" c={C.grn} s/><Btn t="DOWN" c={C.grn} s/></div></div>
+            <div><div style={{fontWeight:700,fontSize:9}}>SV85 BALL SUPPLY</div><div style={{display:"flex",gap:3,marginTop:2}}><Btn t="UP" c={C.grn} s/><Btn t="DOWN" c={C.grn} s/></div></div></div>
+          <div style={{fontWeight:700,fontSize:9,marginBottom:2}}>BALL</div>
+          <div style={{marginBottom:8}}><Btn t={"MAKE EVEN\nRUN"} c={C.grn} s/></div>
+          <div style={{fontWeight:700,fontSize:9,marginBottom:2}}>1CYCLE</div>
+          <div style={{display:"flex",gap:3,marginBottom:8}}><Btn t={"MASK MARK\nSEARCH"} c={C.grn} s/><Btn t={"CAM21\nB MASK"} c={C.blu} s/></div>
+          <div style={{fontWeight:700,fontSize:9,marginBottom:3}}>BALL REMAINING AMOUNT(0-4000)</div>
+          <div style={{fontSize:9}}>
+            <div style={{display:"flex",gap:4,marginBottom:2}}><span style={{width:60}}>FRONT</span><IF v="76" w={45}/></div>
+            <div style={{display:"flex",gap:4,marginBottom:2}}><span style={{width:60}}>CENTER</span><IF v="112" w={45}/></div>
+            <div style={{display:"flex",gap:4,marginBottom:6}}><span style={{width:60}}>REAR</span><IF v="44" w={45}/></div></div>
+          <div style={{display:"flex",gap:3}}><Btn t={"BALL\nRELEASE"} c={C.grn} s/><Btn t={"M43-46\nON"} c={C.grn} s/><Btn t={"M43-46\nOFF"} c={C.grn} s/><Btn t={"M42\nON"} c={C.grn} s/><Btn t={"M42\nOFF"} c={C.grn} s/></div>
+        </div>
+      </div>
+    </div>}
+    {/* Bottom camera buttons */}
+    {sub==="1CYCLE"&&<div style={{display:"flex",gap:12,marginTop:8}}>
+      <div style={{display:"flex",gap:3}}><Btn t={"CAM11\nF MASK"} c={C.grn} s/><Btn t={"CAM12\nF WAFER"} c={C.grn} s/></div>
+      <div style={{display:"flex",gap:3}}><Btn t={"SCREEN\nCHG ←"} c={C.grn} s/><Btn t={"SCREEN\nCHG →"} c={C.grn} s/></div>
+      <div style={{display:"flex",gap:3}}><Btn t={"CAM21\nB MASK"} c={C.blu} s/><Btn t={"CAM22\nB WAFER"} c={C.blu} s/></div>
+    </div>}
+    {log.length>0&&<div style={{marginTop:6,border:"1px solid "+C.brd,background:C.wh,maxHeight:80,overflow:"auto",fontSize:9}}>
+      <div style={{padding:"2px 4px",fontWeight:700,background:"#d0d0d0",position:"sticky",top:0}}>Action Log (Demo)</div>
+      {log.map((l,i)=><div key={i} style={{padding:"1px 4px",background:i===0?"#e0ffe0":"transparent"}}>[{l.t}] <b>{l.m}</b></div>)}</div>}
+  </div>;
+}
+
+// ══════ 6. ERROR HISTORY ══════
+function ErrorHistoryTab(){
+  const [sub,setSub]=useState("HISTORY");
+  const hist=[
+    [1,"214","2026:04:10:11:20:39","ERROR214_BALL_VAC Pad Suck Err"],
+    [2,"364","2026:04:10:08:25:48","ERROR364_M30 BALL MASK CAMERA X_Driver Err"],
+    [3,"147","2026:04:10:08:25:48","ERROR147_M03 FLUX STAGE Z_-OT"],
+    [4,"045","2026:04:10:08:25:48","ERROR045_M23 BALL STAGE Z_-OT"],
+    [5,"301","2026:04:09:15:11:16","ERROR301_FLUX_Wafer Mark 2 Check NG"],
+    [6,"312","2026:04:09:10:27:51","ERROR312_FLUX_SUPPORT_Wafer Suck Err"],
+    [7,"364","2026:04:09:10:25:44","ERROR364_M30 BALL MASK CAMERA X_Driver Err"],
+    [8,"147","2026:04:09:10:25:44","ERROR147_M03 FLUX STAGE Z_-OT"],
+    [9,"045","2026:04:09:10:25:44","ERROR045_M23 BALL STAGE Z_-OT"],
+    [10,"295","2026:04:08:16:41:41","ERROR295_FLUX_Mask Mark 1 Check NG"],
+    [11,"312","2026:04:08:13:37:49","異常312_フラックス部ｻﾎﾟｰﾄ_ｳｪﾊ吸着異常"],
+    [12,"364","2026:04:08:12:50:35","異常364_M30ﾎﾞｰﾙﾏｽｸ上観察ｶﾒﾗX_ﾄﾞﾗｲﾊﾞ異常"],
+    [13,"147","2026:04:08:12:50:35","異常147_M03ﾌﾗｯｸｽｽﾃｰｼﾞZ_-OT"],
+    [14,"045","2026:04:08:12:50:35","異常045_M23ﾎﾞｰﾙｽﾃｰｼﾞZ_-OT"],
+    [15,"364","2026:04:07:13:15:38","異常364_M30ﾎﾞｰﾙﾏｽｸ上観察ｶﾒﾗX_ﾄﾞﾗｲﾊﾞ異常"],
+    [16,"147","2026:04:07:13:15:38","異常147_M03ﾌﾗｯｸｽｽﾃｰｼﾞZ_-OT"],
+    [17,"045","2026:04:07:13:15:38","異常045_M23ﾎﾞｰﾙｽﾃｰｼﾞZ_-OT"],
+    [18,"353","2026:04:06:11:32:25","異常353_ﾎﾞｰﾙ部_6ｲﾝﾁｳｪﾊ押え異常"],
+    [19,"351","2026:04:06:11:32:25","異常351_ﾌﾗｯｸｽ部_6ｲﾝﾁｳｪﾊ押え異常"],
+    [20,"364","2026:04:06:11:25:28","異常364_M30ﾎﾞｰﾙﾏｽｸ上観察ｶﾒﾗX_ﾄﾞﾗｲﾊﾞ異常"]];
+  const stats=[
+    [1,"052","00001","20:05:19","ERROR052_M24 BALL SUPPORT Z_Controller Err"],
+    [2,"045","00021","20:03:58","ERROR045_M23 BALL STAGE Z_-OT"],
+    [3,"003","00003","17:33:42","ERROR003_"],
+    [4,"353","00004","16:35:11","ERROR353_BALL_6inches_Wafer Position Err"],
+    [5,"206","00008","16:19:52","ERROR206_BALL_WAFER MARK 2 Check NG"],
+    [6,"026","00002","0:0:0","ERROR026_PLC18_Cannot Access Unit"],
+    [7,"202","00003","08:10:13","ERROR202_BALL_Mask Mark 2 Check NG"],
+    [8,"263","00049","02:56:51","ERROR263_ALIGNER_Wafer Receipt Err"],
+    [9,"002","00008","02:10:49","ERROR002_Supply Air Pressure Decrease"],
+    [10,"319","00007","02:09:41","ERROR319_FLUX_Squeegee F_Up Err"],
+    [11,"321","00007","02:09:41","ERROR321_FLUX_Squeegee R_Up Err"],
+    [12,"081","00001","01:52:45","ERROR081_M29 REMOVE NOZZLE Z_-OT"],
+    [13,"346","00007","01:32:30","ERROR346_DOWNSTREAM Wafer Suck Err"],
+    [14,"212","00148","01:29:21","ERROR212_WAFER ROBOT_Suck ON Err"],
+    [15,"314","00007","01:19:13","ERROR314_FLUX_VAC Pad Down Err"],
+    [16,"214","00038","00:52:41","ERROR214_BALL_VAC Pad Suck Err"],
+    [17,"351","00003","00:38:00","ERROR351_FLUX_6inches_Wafer Position Err"],
+    [18,"204","00020","00:34:19","ERROR204_BALL_WAFER MARK 1 Check NG"],
+    [19,"387","00029","00:33:33","ERROR387_No MAP DATA Received Err"],
+    [20,"229","00076","00:29:27","ERROR229_WAFER ROBOT_Wafer Suck Err"]];
+  const ScrollBtns=()=><div style={{display:"flex",flexDirection:"column",gap:4,marginLeft:4}}>
+    {[0,1,2,3,4,5,6,7].map(i=><div key={i} style={{width:30,height:28,border:"1px solid #888",background:"#e0e0e0",
+      display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:14,fontWeight:700}}>
+      {i<4?"⬆":"⬇"}</div>)}</div>;
+  return <div>
+    <SubTabs tabs={["HISTORY","STATISTICS"]} active={sub} onSelect={setSub}/>
+    <div style={{display:"flex"}}>
+      <div style={{flex:1,border:"1px solid "+C.brd,background:C.wh}}>
+        {sub==="HISTORY"?<>
+          <div style={{display:"flex",fontWeight:700,fontSize:10,background:"#e0e0e0",padding:"4px 6px",borderBottom:"1px solid "+C.brd}}>
+            <span style={{width:35}}>No</span><span style={{width:55}}>ErrNo</span>
+            <span style={{width:160}}>Occur Time</span><span style={{flex:1}}>Message</span></div>
+          <div style={{maxHeight:420,overflow:"auto"}}>
+            {hist.map((r,i)=><div key={i} style={{display:"flex",fontSize:10,padding:"2px 6px",
+              background:i%2?"#f4f4f4":C.wh,borderBottom:"1px solid #eee"}}>
+              <span style={{width:35}}>{r[0]}</span><span style={{width:55}}>{r[1]}</span>
+              <span style={{width:160}}>{r[2]}</span><span style={{flex:1}}>{r[3]}</span></div>)}</div>
+        </>:<>
+          <div style={{display:"flex",fontWeight:700,fontSize:10,background:"#e0e0e0",padding:"4px 6px",borderBottom:"1px solid "+C.brd}}>
+            <span style={{width:35}}>No</span><span style={{width:55}}>ErrNo</span>
+            <span style={{width:60}}>Count</span><span style={{width:80}}>Total Time</span><span style={{flex:1}}>Message</span></div>
+          <div style={{maxHeight:420,overflow:"auto"}}>
+            {stats.map((r,i)=><div key={i} style={{display:"flex",fontSize:10,padding:"2px 6px",
+              background:i%2?"#f4f4f4":C.wh,borderBottom:"1px solid #eee"}}>
+              <span style={{width:35}}>{r[0]}</span><span style={{width:55}}>{r[1]}</span>
+              <span style={{width:60}}>{r[2]}</span><span style={{width:80}}>{r[3]}</span><span style={{flex:1}}>{r[4]}</span></div>)}</div>
+        </>}
+      </div>
+      <ScrollBtns/>
+    </div>
+    <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:10}}>
+      <Btn t="USB SAVE" c={C.grn} s/><Btn t="USB REMOVE" c={C.grn} s/><div style={{width:20}}/><Btn t="RESET" c={C.red} s/><div style={{width:20}}/><Btn t="HDD SAVE" c={C.blu} s/></div>
+  </div>;
+}
+
+// ══════ 7. PARAMETER ══════
+function ParameterTab(){
+  const [pg,setPg]=useState("FILE");
+  return <div style={{display:"flex",gap:8}}>
+    <div style={{flex:1}}>
+      {pg==="FILE"&&<ParamFile/>}
+      {pg==="WAFER/MASK\nINFORMATION"&&<ParamWafer/>}
+      {pg==="TRANSFER"&&<ParamTransfer/>}
+      {pg==="FLUX PARTS"&&<ParamFlux/>}
+      {pg==="BALL PARTS"&&<ParamBall/>}
+      {pg==="SYSTEM"&&<ParamSystem/>}
+      {pg==="MOTOR"&&<ParamMotor/>}
+    </div>
+    <NavPanel items={["FILE","WAFER/MASK\nINFORMATION","TRANSFER","FLUX PARTS","BALL PARTS","SYSTEM","MOTOR"]} active={pg} onSelect={setPg}/>
+  </div>;
+}
+
+function ParamFile(){
+  const [sel,setSel]=useState(0);
+  const products=[[1,"DEMO-WISOL4-TRA","6INCH-80UM","2026/04/10 08:25:44"],[2,"DEMO-WISOL4","6INCH-80UM","2026/04/09 10:25:45"],
+    [3,"DEMO-WISOL3","6INCH-90UM","2026/04/07 13:15:38"],[4,"SIMMTECH","TEST","2026/04/06 11:30:55"],
+    [5,"DEMO-WISOL2","260106-WISOL","2026/04/06 11:28:56"],[6,"DEMO","12INCH-060","2026/03/16 13:19:34"],
+    [7,"CT17604-0357","FABRINET-0357","2026/03/16 13:12:58"],[8,"DEMO-WISOL","WISOL","2026/01/06 13:08:44"],
+    [9,"CT17604-0348","FABRINET-0348","2025/12/11 15:32:49"],[10,"FY22-VCSEL","","2025/12/10 16:09:28"],
+    [11,"CT17369","FABRINET","2025/11/06 09:44:34"],[12,"CT17604","251028-FABRINET","2025/11/05 14:10:37"],
+    [13,"DEMO-TEST","TRAINING","2025/10/22 08:30:00"],[14,"DEMO-TEST2","TRAINING2","2025/10/08 13:32:23"],
+    [15,"YAMADA","TEST1","2025/05/15 13:49:15"],[16,"CT16919","DURASONIC","2025/04/25 10:44:54"],
+    [17,"924701056010","D100-L150","2025/04/03 11:29:49"],[18,"CU-TEST-300-480","","2025/03/21 15:25:50"],
+    [19,"9247010G6010","SBY12-60UM","2025/03/06 14:57:19"],[20,"12INCH-DRY","","2024/10/17 10:58:15"]];
+  return <div>
+    <div style={{display:"flex"}}>
+      <div style={{flex:1,border:"1px solid "+C.brd,background:C.wh,marginBottom:8}}>
+        <div style={{display:"flex",fontWeight:700,fontSize:10,background:"#e0e0e0",padding:"3px 6px"}}>
+          <span style={{width:30}}>No</span><span style={{width:160}}>Product Name</span>
+          <span style={{width:120}}>Comment</span><span style={{flex:1}}>Data Time</span></div>
+        <div style={{maxHeight:420,overflow:"auto"}}>
+          {products.map((p,i)=><div key={i} onClick={()=>setSel(i)}
+            style={{display:"flex",fontSize:10,padding:"3px 6px",cursor:"pointer",
+              background:sel===i?"#c0e0ff":i%2?"#f8f8f8":C.wh}}>
+            <span style={{width:30}}>{p[0]}</span><span style={{width:160}}>{p[1]}</span>
+            <span style={{width:120}}>{p[2]}</span><span style={{flex:1}}>{p[3]}</span></div>)}</div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:4,marginLeft:4}}>
+        {[0,1,2,3,4,5,6,7].map(i=><div key={i} style={{width:30,height:28,border:"1px solid #888",background:"#e0e0e0",
+          display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:14,fontWeight:700}}>
+          {i<4?"⬆":"⬇"}</div>)}</div>
+    </div>
+    <div style={{display:"flex",gap:4,justifyContent:"center",flexWrap:"wrap"}}>
+      <Btn t={"USB SAVE\nPRODUCT"} c={C.grn} s/><Btn t={"USB SAVE\nMACHINE"} c={C.grn} s/>
+      <Btn t="DELETE" c={C.red} s/><Btn t="SAVE" c={C.grn} s/><Btn t="LOAD" c={C.blu} s/></div>
+    <div style={{display:"flex",justifyContent:"center",marginTop:4}}>
+      <Btn t={"USB\nREMOVE"} c={C.grn} s/></div>
+  </div>;
+}
+
+function MarkRegPopup({title,cam,onClose}){
+  const [jog,setJog]=useState("LOW SPEED");
+  const isBall=cam.includes("21")||cam.includes("22");
+  const ml=isBall?"M31/M32":"M11/M12";
+  return <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000}}
+    onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <div style={{background:C.body,border:"2px solid "+C.brd,width:900,borderRadius:4,boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
+      <div style={{background:C.hdr,padding:"4px 10px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{color:"#60e060",fontWeight:700,fontSize:11}}>Maintenance</span>
+        <span style={{color:"#e0e0e0",fontSize:10}}>DEMO-WISOL4-TRA</span></div>
+      <div style={{fontWeight:700,fontSize:13,padding:"8px 12px"}}>{title}</div>
+      <div style={{display:"flex",gap:12,padding:"0 12px 12px"}}>
+        <div style={{width:340}}>
+          <div style={{border:"1px solid "+C.brd,background:"#000"}}>
+            <div style={{background:"#d0d0d0",padding:"2px 4px",fontSize:9}}>Camera view window</div>
+            <div style={{padding:"1px 3px",display:"flex",gap:8,fontSize:8,background:"#e0e0e0",borderBottom:"1px solid "+C.brd}}>
+              <span>File</span><span>Image</span><span>View</span><span>Command</span></div>
+            <div style={{height:260,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <span style={{color:"#555"}}>Camera Feed</span></div>
+            <div style={{background:"#e0e0e0",padding:"1px 4px",fontSize:8,textAlign:"right"}}>Show window</div>
+          </div>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>IMAGE PROCESSING</div>
+          <div style={{display:"flex",gap:3,marginBottom:6}}>
+            <Btn t="LIVE" c={C.cya} s/><Btn t="REGISTER" c={C.grn} s/>
+            <Btn t={"MARK1\nSEARCH"} c={C.blu} s/><Btn t={"MARK2\nSEARCH"} c={C.blu} s/></div>
+          <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:6,fontSize:9}}>
+            <span>MARK</span><select style={{fontSize:9}}><option>MARK1</option><option>MARK1A</option></select>
+            <span>SEARCH</span><select style={{fontSize:9}}><option>01Model</option></select>
+            <span>SETTING</span><select style={{fontSize:9}}><option>Detail</option></select></div>
+          <div style={{fontWeight:700,fontSize:10,marginBottom:3}}>LIGHTING</div>
+          <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:6}}>
+            <span style={{fontSize:9}}>COAXIAL</span><IF v={isBall?"2":"0"} w={50}/>
+            <span style={{fontSize:9}}>RING</span><IF v={isBall?"0":"0"} w={50}/>
+            <Btn t="MANUAL" c="#888" s/></div>
+          <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>{ml}</div>
+          <div style={{display:"flex",gap:8,fontSize:9,marginBottom:3}}>
+            <span>X</span><IF v="0.000" w={50}/><span>mm</span>
+            <span style={{marginLeft:8}}>ΔX</span><IF v="0.000" w={50}/><span>mm</span></div>
+          <div style={{display:"flex",gap:8,fontSize:9,marginBottom:6}}>
+            <span>Y</span><IF v="0.000" w={50}/><span>mm</span>
+            <span style={{marginLeft:8}}>ΔY</span><IF v="0.000" w={50}/><span>mm</span>
+            <Btn t={"RELATIVE\nMOVE"} c={C.blu} s/></div>
+          <div style={{display:"flex",gap:3,marginBottom:6}}>
+            <Btn t="LOW SPEED" c={jog==="LOW SPEED"?C.grn:"#888"} s onClick={()=>setJog("LOW SPEED")}/>
+            <Btn t="PITCH" c={jog==="PITCH"?C.amb:"#888"} s onClick={()=>setJog("PITCH")}/></div>
+          <div style={{display:"flex",gap:6,fontSize:9,marginBottom:6}}>
+            <span>X</span><IF v={isBall?"0.002":"0.010"} w={50}/><span style={{marginLeft:10}}>Y</span><IF v={isBall?"0.005":"0.010"} w={50}/></div>
+          <div style={{display:"grid",gridTemplateColumns:"50px 50px",gridTemplateRows:"42px 28px 42px",gap:3,justifyItems:"center",alignItems:"center"}}>
+            <div/><Btn t="↑" c={C.grn} s onClick={()=>{}} style={{minWidth:48,minHeight:40,fontSize:16}}/>
+            <Btn t="←" c={C.grn} s onClick={()=>{}} style={{minWidth:48,minHeight:26,fontSize:16}}/>
+            <Btn t="→" c={C.grn} s onClick={()=>{}} style={{minWidth:48,minHeight:26,fontSize:16}}/>
+            <div/><Btn t="↓" c={C.grn} s onClick={()=>{}} style={{minWidth:48,minHeight:40,fontSize:16}}/></div>
+        </div>
+      </div>
+      <div style={{display:"flex",justifyContent:"flex-end",padding:"6px 12px 10px"}}>
+        <Btn t="END" c={C.blu} onClick={onClose} style={{minWidth:80}}/></div>
+    </div>
+  </div>;
+}
+
+function ParamWafer(){
+  const [sub,setSub]=useState("WAFER INF1");
+  const [dm,setDm]=useState("M-DATA");
+  const [wsz,setWsz]=useState("8inch");
+  const [mz,setMz]=useState("25steps");
+  const [mkPop,setMkPop]=useState(null);
+  const subs=["WAFER INF1","WAFER INF2","MASK INF FLUX","MASK INF BALL","WAFER INF FLUX","WAFER INF BALL"];
+  return <div style={{position:"relative"}}>
+    <SubTabs tabs={subs} active={sub} onSelect={s=>{setSub(s);setDm("M-DATA");}}/>
+    {sub!=="WAFER INF1"&&sub!=="WAFER INF2"&&<div style={{position:"absolute",right:10,top:2}}>
+      <Btn t={dm==="M-DATA"?"P-DATA SCREEN":"M-DATA SCREEN"} c={C.blu} s onClick={()=>setDm(d=>d==="M-DATA"?"P-DATA":"M-DATA")}/></div>}
+    {sub==="WAFER INF1"&&<div>
+      <PRow l="WAFER SIZE" v="8" u=""/>
+      <div style={{display:"flex",gap:3,marginBottom:6}}>
+        {["12inch","8inch","6inch"].map(s=><Btn key={s} t={s} c={wsz===s?C.grn:C.blu} s onClick={()=>setWsz(s)}/>)}</div>
+      <PRow l="WAFER THICKNESS" v="0.520"/>
+      <PRow l="WAFER THICK MEAS +LIMIT" v="0.520"/>
+      <PRow l="WAFER THICK MEAS -LIMIT" v="-0.520"/>
+      <div style={{display:"flex",alignItems:"center",gap:3,marginBottom:4}}>
+        <span style={{fontWeight:700,fontSize:10,minWidth:200}}>MZ STEPS</span><IF v={mz.replace("steps","")} w={40}/>
+        {["25steps","13steps","12steps"].map(s=><Btn key={s} t={s} c={mz===s?C.grn:C.blu} s onClick={()=>setMz(s)}/>)}</div>
+      <PRow l="MZ PITCH" v="10.000"/>
+      <PRow l="LP OFFSET DISTANCE" v="0.000"/>
+      <PRow l="LP WAFER THICK TOLERANCE" v="1.000" u="mm (DEFAULT 0.5mm)"/>
+      <PRow l="LP WAFER POS TOLERANCE" v="5.000" u="mm (DEFAULT 2.0mm)"/>
+    </div>}
+    {sub==="WAFER INF2"&&<div style={{display:"flex",gap:12}}>
+      <div style={{minWidth:400}}>
+        {[["WAFER MARK1X","65.520"],["WAFER MARK1Y","9.405"],["WAFER MARK2X","-65.520"],["WAFER MARK2Y","-9.405"]].map((r,i)=>
+          <div key={i} style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+            <span style={{fontWeight:700,fontSize:10,width:120}}>{r[0]}</span><IF v={r[1]} w={55}/>
+            <span style={{fontSize:9}}>mm</span>
+            {i===0&&<><span style={{marginLeft:4}}>→</span><Btn t="MARK1SET" c={C.grn} s/></>}
+            {i===2&&<><span style={{marginLeft:4}}>→</span><Btn t="MARK2SET" c={C.grn} s/></>}
+          </div>)}
+        <div style={{fontSize:9,marginTop:6}}>
+          {[["B-WAFER MARK1 COAXIAL LIGHT","2"],["B-WAFER MARK1 RING LIGHT","0"]].map((r,i)=>
+            <div key={i} style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
+              <span style={{fontWeight:700,width:200}}>{r[0]}</span><IF v={r[1]} w={35}/><span>(0-255)</span></div>)}
+          <div style={{margin:"4px 0"}}><Btn t={"MARK\nREGISTER"} c={C.grn} s
+            onClick={()=>setMkPop({t:"CAM22 BALL WAFERMARK REGISTRATION",c:"CAM22"})}/></div>
+          {[["B-WAFER MARK2 COAXIAL LIGHT","2"],["B-WAFER MARK2 RING LIGHT","0"]].map((r,i)=>
+            <div key={i} style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
+              <span style={{fontWeight:700,width:200}}>{r[0]}</span><IF v={r[1]} w={35}/><span>(0-255)</span></div>)}
+        </div>
+        <div style={{marginTop:6}}>
+          <div style={{fontWeight:700,fontSize:10}}>M31/32 BALL CAMERA XY</div>
+          <div style={{display:"flex",gap:3,alignItems:"center",marginBottom:4}}>
+            <Btn t={"WAFER\nMARK1 POS"} c={C.grn} s/><Btn t={"WAFER\nMARK2 POS"} c={C.grn} s/>
+            <span style={{fontSize:9,marginLeft:6}}>CAM22 BALL WAFER CAM</span>
+            <span style={{fontSize:9}}>No.</span><IF v="0" w={24}/>
+            <Btn t={"B Wafer\nCAM22"} c={C.blu} s/><Btn t="LIVE" c={C.grn} s/></div>
+        </div>
+        <div style={{fontSize:9,marginTop:4}}>
+          {[["F-WAFER MARK1 COAXIAL LIGHT","2"],["F-WAFER MARK1 RING LIGHT","0"]].map((r,i)=>
+            <div key={i} style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
+              <span style={{fontWeight:700,width:200}}>{r[0]}</span><IF v={r[1]} w={35}/><span>(0-255)</span></div>)}
+          <div style={{margin:"4px 0"}}><Btn t={"MARK\nREGISTER"} c={C.pur} s
+            onClick={()=>setMkPop({t:"CAM12 FLUX WAFERMARK REGISTRATION",c:"CAM12"})}/></div>
+          {[["F-WAFER MARK2 COAXIAL LIGHT","2"],["F-WAFER MARK2 RING LIGHT","0"]].map((r,i)=>
+            <div key={i} style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
+              <span style={{fontWeight:700,width:200}}>{r[0]}</span><IF v={r[1]} w={35}/><span>(0-255)</span></div>)}
+        </div>
+        <div style={{marginTop:6}}>
+          <div style={{fontWeight:700,fontSize:10}}>M11/12 FLUX CAMERA XY</div>
+          <div style={{display:"flex",gap:3,alignItems:"center"}}>
+            <Btn t={"WAFER\nMARK1 POS"} c={C.grn} s/><Btn t={"WAFER\nMARK2 POS"} c={C.grn} s/>
+            <span style={{fontSize:9,marginLeft:6}}>CAM12 FLUX WAFER CAM</span>
+            <span style={{fontSize:9}}>No.</span><IF v="0" w={24}/>
+            <Btn t={"F Wafer\nCAM12"} c={C.blu} s/><Btn t="LIVE" c={C.grn} s/></div>
+        </div>
+      </div>
+      <div style={{flex:1}}>
+        <Btn t={"MARK\nREGISTER"} c={C.blu} s onClick={()=>setMkPop({t:"CAM22 BALL WAFERMARK REGISTRATION",c:"CAM22"})}/>
+        <div style={{fontWeight:700,fontSize:10,marginTop:10,marginBottom:4}}>JOG/PITCH</div>
+        <div style={{display:"flex",gap:3,marginBottom:8}}>
+          <Btn t="LOW SPEED" c={C.grn} s/><Btn t="PITCH" c={C.amb} s/></div>
+        <div style={{display:"flex",gap:16,fontSize:9,marginBottom:8}}>
+          <div><div style={{fontWeight:700}}>M31/32 BALL CAMERA XY</div><div>RELATIVE M-AMOUNT</div>
+            <div>M31 <IF v="0.002" w={45}/> mm</div><div>M32 <IF v="0.005" w={45}/> mm</div></div>
+          <div><div style={{fontWeight:700}}>M11/12 FLUX CAMERA XY</div><div>RELATIVE M-AMOUNT</div>
+            <div>M11 <IF v="0.010" w={45}/> mm</div><div>M12 <IF v="0.010" w={45}/> mm</div></div>
+        </div>
+        <div style={{display:"flex",gap:20}}>
+          {[0,1].map(pad=><div key={pad}>
+            <div style={{display:"grid",gridTemplateColumns:"48px 48px",gridTemplateRows:"40px 28px 40px",gap:3,justifyItems:"center",alignItems:"center"}}>
+              <div/><Btn t="↑" c={C.grn} s style={{minWidth:46,minHeight:38,fontSize:14}}/>
+              <Btn t="←" c={C.grn} s style={{minWidth:46,minHeight:26,fontSize:14}}/>
+              <Btn t="→" c={C.grn} s style={{minWidth:46,minHeight:26,fontSize:14}}/>
+              <div/><Btn t="↓" c={C.grn} s style={{minWidth:46,minHeight:38,fontSize:14}}/></div>
+          </div>)}
+        </div>
+      </div>
+    </div>}
+    {sub==="MASK INF FLUX"&&<div>
+      {dm==="M-DATA"?<div>
+        <PRow l="FLUX MASK MARK1X" v="65.520"/><PRow l="FLUX MASK MARK1Y" v="9.405"/>
+        <PRow l="FLUX MASK MARK2X" v="-65.520"/><PRow l="FLUX MASK MARK2Y" v="-9.405"/>
+        <div style={{height:6}}/>
+        <PRow l="FLUX MASK MARK1 RING" v="255" u="(0-255)"/>
+        <PRow l="FLUX MASK MARK2 RING" v="255" u="(0-255)"/>
+        <PRow l="FLUX MASK MARK SEARCH FREQ" v="0" u="0:CLAMP 1~:WAFER EVERY"/>
+        <div style={{height:6}}/>
+        <PRow l="F-MASK MARK1X SEARCH POS OFFSET" v="0.300"/>
+        <PRow l="F-MASK MARK1Y SEARCH POS OFFSET" v="-1.000"/>
+        <PRow l="F-MASK MARK2X SEARCH POS OFFSET" v="0.250"/>
+        <PRow l="F-MASK MARK2Y SEARCH POS OFFSET" v="-0.730"/>
+        <div style={{marginTop:8,display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontWeight:700,fontSize:10}}>CAM11 FLUX MASK MARK REGISTER</span>
+          <Btn t={"MARK\nREGISTER"} c={C.pur} s onClick={()=>setMkPop({t:"CAM11 FLUX MASK MARK REGISTRATION",c:"CAM11"})}/></div>
+      </div>:<div>
+        <PRow l="F-MASK MARK1X SEARCH POS OFFSET" v="0.000"/>
+        <PRow l="F-MASK MARK1Y SEARCH POS OFFSET" v="0.000"/>
+        <div style={{height:6}}/>
+        <PRow l="F-MASK MARK2X SEARCH POS OFFSET" v="0.000"/>
+        <PRow l="F-MASK MARK2Y SEARCH POS OFFSET" v="0.000"/></div>}
+    </div>}
+    {sub==="MASK INF BALL"&&<div>
+      {dm==="M-DATA"?<div>
+        <PRow l="BALL MASK MARK1X" v="65.520"/><PRow l="BALL MASK MARK1Y" v="9.405"/>
+        <PRow l="BALL MASK MARK2X" v="-65.520"/><PRow l="BALL MASK MARK2Y" v="-9.405"/>
+        <div style={{height:6}}/>
+        <PRow l="BALL MASK MARK1 RING" v="70" u="(0-255)"/>
+        <PRow l="BALL MASK MARK2 RING" v="70" u="(0-255)"/>
+        <PRow l="BALL MASK MARK SEARCH FREQ" v="0" u="0:CLAMP 1~:WAFER EVERY"/>
+        <div style={{height:6}}/>
+        <PRow l="BALL MASK MARK1X SEARCH POS OFFSET" v="0.740"/>
+        <PRow l="BALL MASK MARK1Y SEARCH POS OFFSET" v="-0.170"/>
+        <PRow l="BALL MASK MARK2X SEARCH POS OFFSET" v="0.700"/>
+        <PRow l="BALL MASK MARK2Y SEARCH POS OFFSET" v="0.065"/>
+        <div style={{marginTop:8,display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontWeight:700,fontSize:10}}>CAM21 BALL MASK MARK REGISTER</span>
+          <Btn t={"MARK\nREGISTER"} c={C.blu} s onClick={()=>setMkPop({t:"CAM21 BALL MASK MARK REGISTRATION",c:"CAM21"})}/></div>
+      </div>:<div>
+        <PRow l="B-MASK MARK1X SEARCH POS OFFSET" v="0.000"/>
+        <PRow l="B-MASK MARK1Y SEARCH POS OFFSET" v="0.000"/>
+        <div style={{height:6}}/>
+        <PRow l="B-MASK MARK2X SEARCH POS OFFSET" v="0.000"/>
+        <PRow l="B-MASK MARK2Y SEARCH POS OFFSET" v="0.000"/></div>}
+    </div>}
+    {sub==="WAFER INF FLUX"&&<div>
+      <PRow l="FLUX WAFER MARK1X SEARCH OFFSET" v="0.000"/>
+      <PRow l="FLUX WAFER MARK1Y SEARCH OFFSET" v="0.000"/>
+      <PRow l="FLUX WAFER MARK2X SEARCH OFFSET" v="0.000"/>
+      <PRow l="FLUX WAFER MARK2Y SEARCH OFFSET" v="-1.000"/>
+      <div style={{marginTop:8,display:"flex",alignItems:"center",gap:6}}>
+        <span style={{fontWeight:700,fontSize:10}}>CAM12 FLUX WAFER MARK REGISTER</span>
+        <Btn t={"MARK\nREGISTER"} c={C.pur} s onClick={()=>setMkPop({t:"CAM12 FLUX WAFERMARK REGISTRATION",c:"CAM12"})}/></div>
+    </div>}
+    {sub==="WAFER INF BALL"&&<div>
+      <PRow l="BALL WAFER MARK1X SEARCH OFFSET" v="0.000"/>
+      <PRow l="BALL WAFER MARK1Y SEARCH OFFSET" v="0.000"/>
+      <PRow l="BALL WAFER MARK2X SEARCH OFFSET" v="0.000"/>
+      <PRow l="BALL WAFER MARK2Y SEARCH OFFSET" v="0.000"/>
+      <div style={{marginTop:8,display:"flex",alignItems:"center",gap:6}}>
+        <span style={{fontWeight:700,fontSize:10}}>CAM22 BALL WAFER MARK REGISTER</span>
+        <Btn t={"MARK\nREGISTER"} c={C.blu} s onClick={()=>setMkPop({t:"CAM22 BALL WAFERMARK REGISTRATION",c:"CAM22"})}/></div>
+    </div>}
+    {mkPop&&<MarkRegPopup title={mkPop.t} cam={mkPop.c} onClose={()=>setMkPop(null)}/>}
+  </div>;
+}
+
+function ParamTransfer(){
+  const [sub,setSub]=useState("ROBOT");
+  const [dm,setDm]=useState("P-DATA");
+  return <div style={{position:"relative"}}>
+    <SubTabs tabs={["ROBOT","FLUX STAGE","BALL STAGE"]} active={sub} onSelect={setSub}/>
+    <div style={{position:"absolute",right:10,top:2}}>
+      <Btn t={dm==="P-DATA"?"M-DATA SCREEN":"P-DATA SCREEN"} c={C.blu} s onClick={()=>setDm(d=>d==="P-DATA"?"M-DATA":"P-DATA")}/></div>
+    <div style={{fontWeight:700,fontSize:11,marginBottom:6}}>WAFER ROBOT {sub} ({dm})</div>
+    <PRow l="M91 Z HEIGHT UP" v={sub==="FLUX STAGE"?"16.600":sub==="BALL STAGE"?"17.450":"38.400"}/>
+    <PRow l="M91 Z HEIGHT DOWN" v={sub==="FLUX STAGE"?"4.600":sub==="BALL STAGE"?"3.000":"5.000"}/>
+    <PRow l="M92 θPOS" v={sub==="FLUX STAGE"?"270.0000":sub==="BALL STAGE"?"90.0000":"0.0000"} u="degree"/>
+    <PRow l="M93 R POS" v={sub==="FLUX STAGE"?"31500":sub==="BALL STAGE"?"31000":"40200"} u="pls"/>
+  </div>;
+}
+
+function ParamFlux(){
+  const [sub,setSub]=useState("TRANSFER");
+  const [dm,setDm]=useState("M-DATA");
+  return <div style={{position:"relative"}}>
+    <SubTabs tabs={["TRANSFER","CAMERA/CLEANING","PRINT"]} active={sub} onSelect={setSub}/>
+    <div style={{position:"absolute",right:10,top:2}}>
+      <Btn t={dm==="M-DATA"?"P-DATA SCREEN":"M-DATA SCREEN"} c={C.blu} s onClick={()=>setDm(d=>d==="M-DATA"?"P-DATA":"M-DATA")}/></div>
+    {sub==="TRANSFER"&&dm==="M-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>FLUX PARTS STAGE</div>
+      <PRow l="WAFER GET REF X" v="1.000"/><PRow l="WAFER GET REF Y" v="-1.300"/>
+      <PRow l="WAFER PUT REF X" v="1.000"/><PRow l="WAFER PUT REF Y" v="-1.300"/>
+      <PRow l="M03 STAGE Z TRANSFER HEIGHT" v="0.000"/>
+      <PRow l="SEARCH/PRINT X" v="-675.000"/><PRow l="SEARCH/PRINT Y" v="0.000"/>
+      <PRow l="SEARCH/PRINT θ" v="0.0000" u="degree"/>
+      <PRow l="M03 STAGE Z SEARCH HEIGHT" v="-0.100"/>
+      <PRow l="M03 STAGE Z PRINT REF HEIGHT" v="110.180"/>
+    </div>}
+    {sub==="CAMERA/CLEANING"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>MASK REAR CLEANING</div>
+      <PRow l="M12 CLEANING HEAD F OFFSET" v="0.000"/>
+      <PRow l="M12 CLEANING HEAD R OFFSET" v="0.000"/>
+      <PRow l="M12 CLEANING OFFSET" v="2.000"/>
+      <PRow l="WET CLEAN COUNT" v="1" u="count"/>
+      <PRow l="DRY CLEAN COUNT" v="1" u="count"/>
+      <PRow l="F-MASK CLEANING FREQ" v="0" u="every (0:DISABLE)"/>
+      <PRow l="CLEAN FLUID SUPPLY INTERVAL" v="3" u="count"/>
+      <PRow l="CLEAN FLUID SUPPLY WAIT TIME" v="0.500" u="s"/>
+      <PRow l="MASK CLEANING SET COUNT" v="4" u="count"/>
+    </div>}
+    {sub==="PRINT"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>FLUX SQUEEGEE</div>
+      <PRow l="M07 SQUEEGEE FRONT POS" v="30.000"/>
+      <PRow l="M07 SQUEEGEE REAR POS" v="30.000"/>
+      <PRow l="START DELAY AFTER DOWN" v="1.0" u="s"/>
+      <PRow l="SPEED" v="30" u="mm/s"/>
+      <PRow l="SQUEEGEE UP DELAY" v="0.000" u="s"/>
+      <PRow l="FLUX SQUEEGEE COUNT" v="1" u="count"/>
+      <PRow l="FLUX MGMT TIMER" v="0" u="hour"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>PRINT CLEARANCE</div>
+      <PRow l="M03 STAGE Z PRINT HEIGHT" v="110.180"/>
+      <PRow l="M04 SUPPORT Z MASK LIFT" v="-0.100" u="mm (negative)"/>
+      <PRow l="SQUEEGEE PUSH-IN AMOUNT" v="0.100"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>PRINT PRESSURE</div>
+      <PRow l="DESCENT PRESSURE (PRINT)" v="0.200" u="MPa"/>
+      <PRow l="ASCENT PRESSURE (CANCEL)" v="0.050" u="MPa"/>
+      <div style={{fontSize:9,color:"#666",marginTop:4}}>※ Clearance narrow → flux bleeding. Clearance wide → missing print.</div>
+    </div>}
+  </div>;
+}
+
+function ParamBall(){
+  const [sub,setSub]=useState("CAMERA/CLEANING");
+  const [dm,setDm]=useState("M-DATA");
+  return <div style={{position:"relative"}}>
+    <SubTabs tabs={["TRANSFER","CAMERA/CLEANING","MOUNT1","MOUNT2","MOUNT3","MOUNT4","MOUNT5","MOUNT6"]} active={sub} onSelect={setSub}/>
+    <div style={{position:"absolute",right:10,top:2}}>
+      <Btn t={dm==="M-DATA"?"P-DATA SCREEN":"M-DATA SCREEN"} c={C.blu} s onClick={()=>setDm(d=>d==="M-DATA"?"P-DATA":"M-DATA")}/></div>
+    {sub==="TRANSFER"&&<div>
+      <PRow l="WAFER GET REF X" v="0.000"/><PRow l="WAFER GET REF Y" v="-2.400"/>
+      <PRow l="SEARCH/MOUNT X" v="675.000"/><PRow l="SEARCH/MOUNT Y" v="0.000"/>
+      <PRow l="M23 STAGE Z MOUNT REF HEIGHT" v="110.000"/>
+    </div>}
+    {sub==="CAMERA/CLEANING"&&<div>
+      <PRow l="BALL MASK CENTER POS X" v="0.000"/><PRow l="BALL MASK CENTER POS Y" v="-283.135"/>
+      <PRow l="CLEANING SPEED (WET)" v="50" u="mm/s"/>
+      <PRow l="CLEANING SPEED (DRY)" v="50" u="mm/s"/>
+      <PRow l="M32 CLEANING HEAD REF POS" v="-387.100"/>
+    </div>}
+    {sub==="MOUNT1"&&<div>
+      <PRow l="MASK CAM CENTER POS X" v="0.000"/>
+      <PRow l="M26 BALL SUPPLY VAC POS X" v="0.000"/>
+      <PRow l="M27 BALL SUPPLY VAC POS Y" v="-289.000"/>
+      <PRow l="M27 DISCHARGE POS Y" v="-380.000"/>
+      <div style={{fontWeight:700,fontSize:10,margin:"8px 0 4px"}}>M34 BALL HOPPER</div>
+      {["TRAY1:-490","TRAY2:-452","TRAY3:-418","TRAY4:-373","TRAY5:-338","TRAY6:-300","TRAY7:-257","TRAY8:-219","TRAY9:-185"].map(s=>{
+        var p=s.split(":");return <PRow key={p[0]} l={p[0]} v={p[1]+".000"}/>;})}
+    </div>}
+    {sub==="MOUNT2"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>BALL MOUNT</div>
+      <PRow l="M28 BALL Z STAGE BASE POS" v="-122.000"/><PRow l="M28 BALL Z STAGE BASE POS" v="-122.000"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:6,marginBottom:4}}>※ OFFSET SET (to align ball position to wafer PAD)</div>
+      <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+        <span style={{fontWeight:700,fontSize:10,minWidth:200}}>BALL MOUNT OFFSET X</span>
+        <IF v="-0.006" w={70}/><span style={{fontSize:9}}>mm</span></div>
+      <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+        <span style={{fontWeight:700,fontSize:10,minWidth:200}}>BALL MOUNT OFFSET Y</span>
+        <IF v="0.149" w={70}/><span style={{fontSize:9}}>mm</span></div>
+      <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+        <span style={{fontWeight:700,fontSize:10,minWidth:200}}>BALL MOUNT OFFSET θ</span>
+        <IF v="0.0071" w={70}/><span style={{fontSize:9}}>degree</span></div>
+      <div style={{display:"flex",gap:8,marginTop:6,marginBottom:6}}>
+        <Btn t="SET" c={C.grn} s/><Btn t="SET+2" c={C.amb} s/>
+        <div style={{fontSize:9,display:"flex",gap:6,alignItems:"center"}}>
+          <span>X</span><IF v="-676.876" w={60}/><span>mm</span>
+          <span>Y</span><IF v="1.868" w={60}/><span>mm</span>
+          <span>θ</span><IF v="-59.4000" w={60}/></div>
+      </div>
+      <div style={{fontWeight:700,fontSize:10,marginTop:6,marginBottom:4}}>BALL COVER PRESSURE</div>
+      <PRow l="BALL COVER PRS(MOUNT)" v="0.100" u="MPa"/>
+      <PRow l="BALL COVER PRS(VAC-REMOVE)" v="0.300" u="MPa"/>
+      <PRow l="BALL COVER PRS(FIXED/NOZZLE)" v="0.100" u="MPa"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:6,marginBottom:4}}>BALL MOUNT HEAD</div>
+      <PRow l="BALL ALIGN MOVE DIST" v="0.050" u="mm"/>
+      <PRow l="BALL ALIGN STOP TIME" v="0.5" u="s"/>
+      <PRow l="M21/M22 STEP XY SPEED" v="10" u="mm/s"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:6,marginBottom:4}}>BALL INSPECTION TIME</div>
+      <PRow l="BALL COVER PRS(MOUNT)" v="0.050" u="MPa"/>
+      <PRow l="BALL COVER PRS(VAC-REM)" v="0.100" u="MPa"/>
+      <PRow l="BALL COVER PRS(FIXED/NOZZLE)" v="0.100" u="MPa"/>
+      <div style={{fontSize:9,color:"#666",marginTop:4}}>※ Original + Actual FLUX offset = Input value</div>
+    </div>}
+    {sub==="MOUNT3"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>BALL MOUNT TIME</div>
+      <PRow l="VAC ON" v="0.300" u="s"/><PRow l="VAC OFF" v="0.150" u="s"/>
+      <PRow l="BALL MOUNT NUM" v="3" u="count"/><PRow l="BALL MOUNT POS" v="8" u="point"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>CUP ON DELAY (FRONT/MIDDLE/REAR)</div>
+      <PRow l="REAR ON DELAY" v="0.000" u="s"/>
+      <PRow l="MIDDLE ON DELAY" v="0.150" u="s"/>
+      <PRow l="FRONT ON DELAY" v="0.000" u="s"/>
+      <div style={{fontSize:9,color:"#666",marginTop:4}}>※ Small ball (under 0.15mm): ON 0.300s / OFF 0.150s × 3 = 1.350s</div>
+      <div style={{fontSize:9,color:"#666"}}>※ Large ball (0.15mm+): ON 0.400s / OFF 0.200s × 3 = 1.800s</div>
+    </div>}
+    {sub==="MOUNT4"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>BALL VACUUM REMOVE 1</div>
+      <PRow l="M26 BALL X VAC/REM START" v="0.000"/>
+      <PRow l="M27 BALL Y VAC/REM START" v="-140.000"/>
+      <PRow l="M27 BALL Y VAC/REM END" v="140.000"/>
+      <PRow l="M26 X MOVE AMOUNT" v="40.000"/>
+      <PRow l="BALL VAC REMOVE COUNT" v="4" u="count"/>
+      <PRow l="M28 BALL Z VAC/REM HEIGHT" v="-120.700"/>
+      <div style={{fontSize:9,color:"#666",marginTop:4}}>※ Clearance too narrow → mask lifts. Too wide → balls remain on mask.</div>
+      <div style={{fontSize:9,color:"#666"}}>※ Recommended clearance: 3~4mm for head, 2~3mm for nozzle</div>
+    </div>}
+    {sub==="MOUNT5"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>VACUUM REMOVE2</div>
+      <PRow l="M27 BALLY VAC/REM2 START" v="140.000"/>
+      <PRow l="M27 BALLY VAC/REM2 END" v="-140.000"/>
+      <PRow l="VACUUM REMOVE2 COUNT" v="4" u="count"/>
+    </div>}
+    {sub==="MOUNT6"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>MASK CAMERA</div>
+      <PRow l="MONITOR NUM" v="6" u="POINT"/>
+      <PRow l="MONITOR1X,Y" v="-68.784 / 1.763"/>
+      <PRow l="MONITOR2X,Y" v="-68.684 / -1.114"/>
+      <PRow l="MONITOR STOP TIME" v="1.0" u="s"/>
+      <PRow l="MASK CAMERA LIGHTING" v="150" u="(0-255)"/>
+    </div>}
+  </div>;
+}
+
+function SignalConfig({color,bg}){
+  const [states,setStates]=useState({RUN:"ON",STOP:"OFF",PAUSE:"BLINK",ERROR:"OFF"});
+  const opts=["ON","OFF","BLINK","BLINK2"];
+  return <div style={{border:"1px solid "+C.brd,padding:6,minWidth:140}}>
+    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+      <div style={{width:20,height:20,borderRadius:"50%",background:bg,border:"2px solid #666"}}/>
+      <span style={{fontWeight:700,fontSize:11}}>{color}</span></div>
+    {["RUN","STOP","PAUSE","ERROR"].map(st=>
+      <div key={st} style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+        <span style={{fontSize:9,fontWeight:700,width:50}}>{st}</span>
+        <div style={{display:"flex",gap:2}}>
+          {opts.map(o=><div key={o} onClick={()=>setStates(p=>({...p,[st]:o}))}
+            style={{padding:"2px 6px",fontSize:8,fontWeight:700,cursor:"pointer",border:"1px solid #999",
+              background:states[st]===o?bg:"#d0d0d0",color:states[st]===o?"#fff":"#333",borderRadius:1}}>{o}</div>)}</div>
+      </div>)}
+  </div>;
+}
+
+function BuzzerConfig(){
+  const [buz,setBuz]=useState({RUN:"SILENT",STOP:"CONST",PAUSE:"ONandOFF",ERROR:"CONST"});
+  const opts=["CONST","ONandOFF","SILENT"];
+  return <div style={{border:"1px solid "+C.brd,padding:6,display:"inline-block"}}>
+    {["RUN","STOP","PAUSE","ERROR"].map(st=>
+      <div key={st} style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+        <span style={{fontSize:9,fontWeight:700,width:50}}>{st}</span>
+        <div style={{display:"flex",gap:2}}>
+          {opts.map(o=><div key={o} onClick={()=>setBuz(p=>({...p,[st]:o}))}
+            style={{padding:"2px 8px",fontSize:8,fontWeight:700,cursor:"pointer",border:"1px solid #999",
+              background:buz[st]===o?C.buzz:"#d0d0d0",color:buz[st]===o?"#fff":"#333",borderRadius:1}}>{o}</div>)}</div>
+      </div>)}
+  </div>;
+}
+
+function ParamSystem(){
+  const [sub,setSub]=useState("MOVE MODE");
+  const [lang,setLang]=useState("ENGLISH");
+  return <div>
+    <SubTabs tabs={["PIXEL SIZE SETTING","MOVE MODE","SIGNAL/BUZZER","PASSWORD"]} active={sub} onSelect={setSub}/>
+    {sub==="MOVE MODE"&&<div>
+      <div style={{display:"flex",gap:20,marginBottom:16}}>
+        <div>
+          <div style={{fontWeight:700,marginBottom:4}}>LANGUAGE SETTING</div>
+          <div style={{display:"flex",gap:3,marginBottom:16}}>
+            {["日本語","ENGLISH","中文"].map(l=><Btn key={l} t={l} c={lang===l?C.grn:C.blu} s onClick={()=>setLang(l)}/>)}</div>
+          <div style={{fontWeight:700,marginBottom:4}}>CONTROL FILE</div>
+          <div style={{display:"flex",gap:4}}>
+            <div style={{padding:"4px 16px",border:"1px solid "+C.brd,background:C.wh,fontSize:10,cursor:"pointer"}}>LOAD</div>
+            <div style={{padding:"4px 16px",border:"1px solid "+C.brd,background:C.wh,fontSize:10,cursor:"pointer"}}>SAVE</div></div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:4}}>
+          {["DRY RUN","AFFECT\nINSP RESULT\nIN TRANSFER","WARPED WAFER\nTRANSFER\nMODE","MAP\nCOMM.",
+            "SINGLE MODE","PRE-MOUNT\nMASK\nMONITOR","RUN MODE7","STAGE AVOID\nSELECT\nBALL PARTS",
+            "STAGE AVOID\nSELECT\nFLUX PARTS","RUN MODE10","RUN MODE11","RUN MODE12",
+            "RUN MODE13","RUN MODE14","RUN MODE15","RUN MODE16"].map((m,i)=>
+            <Btn key={i} t={m} c={C.blu} s/>)}</div>
+      </div>
+      <div style={{display:"flex",gap:30,marginTop:20}}>
+        <div style={{border:"1px solid "+C.brd,padding:8}}>
+          <div style={{fontWeight:700,fontSize:10,marginBottom:6}}>DATA BACKUP</div>
+          <Btn t="BACKUP" c={C.grn} s/></div>
+        <div>
+          <div style={{fontWeight:700,fontSize:10,marginBottom:6}}>USB DRIVE</div>
+          <select style={{fontSize:10,padding:"2px 6px"}}><option>E Drive</option></select></div>
+      </div>
+    </div>}
+    {sub==="SIGNAL/BUZZER"&&<div>
+      <div style={{fontWeight:700,fontSize:11,marginBottom:8}}>SIGNAL TOWER</div>
+      <div style={{display:"flex",gap:20,marginBottom:12}}>
+        {[{color:"GREEN",bg:"#00c000"},{color:"YELLOW",bg:"#e0e000"},{color:"RED",bg:"#e02020"}].map(sg=>
+          <SignalConfig key={sg.color} color={sg.color} bg={sg.bg}/>)}
+      </div>
+      <div style={{fontWeight:700,fontSize:11,marginBottom:6}}>BUZZER SETTING</div>
+      <BuzzerConfig/>
+    </div>}
+    {sub==="PASSWORD"&&<div>
+      {["MAINTENANCE","ENGINEER","OPERATOR"].map(p=>
+        <div key={p} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+          <span style={{fontWeight:700,width:120}}>{p}</span>
+          <input type="password" defaultValue="*" style={{width:100,padding:"3px",border:"1px solid "+C.brd}}/></div>)}</div>}
+    {sub==="PIXEL SIZE SETTING"&&<div>
+      {["CAM12","CAM11","CAM22","CAM21"].map(c=><div key={c} style={{marginBottom:8}}>
+        <div style={{fontWeight:700,fontSize:10,marginBottom:3}}>{c} PIXEL SIZE</div><Btn t={c} c={C.pur}/></div>)}</div>}
+  </div>;
+}
+
+function ParamMotor(){
+  const [grp,setGrp]=useState("M01 - M04");
+  const grps=["M01 - M04","M05 - M08","M11 - M14","M21 - M24","M25 - M28","M29 - M32","M33 - M36","M91 - M93"];
+  const D={"M01 - M04":[["M01","FLUX STAGE X","-1.495","700"],["M03","FLUX STAGE Z","-0.200","200"],["M02","FLUX STAGE Y","3.730","500"],["M04","FLUX SUPPORT Z","1.180","300"]],
+    "M05 - M08":[["M05","FLUX STAGE θ","-165.0000","250"],["M07","SQUEEGEE Y","9.910","50"],["M06","---","1.000","10"],["M08","SQUEEGEE Z","6.500","50"]],
+    "M11 - M14":[["M11","FLUX CAM X","139.798","400"],["M13","","0.000","10"],["M12","FLUX CAM Y","6.000","400"],["M14","AUTO SUPPLY X","-16.000","100"]],
+    "M21 - M24":[["M21","BALL STAGE X","-1.034","700"],["M23","BALL STAGE Z","-3.370","200"],["M22","BALL STAGE Y","2.410","500"],["M24","BALL SUPPORT Z","1.770","200"]],
+    "M25 - M28":[["M25","BALL θ","134.0000","250"],["M27","BALL Y","-38.065","700"],["M26","BALL X","9.000","700"],["M28","BALL Z","-0.590","500"]],
+    "M29 - M32":[["M29","REM NOZZLE Z","17.300","500"],["M31","BALL CAM X","140.918","400"],["M30","MASK CAM X","174.870","200"],["M32","BALL CAM Y","5.800","400"]],
+    "M33 - M36":[["M33","","-15.000","50"],["M35","","0.000","10"],["M34","BALL SUPPLY X","20.400","400"],["M36","","0.000","10"]],
+    "M91 - M93":[["M91","ROBOT Z","13.500","200"],["M93","ROBOT R","1530","50000"],["M92","ROBOT θ","31.6000","270"]]};
+  const ms=D[grp]||[];
+  return <div>
+    <div style={{display:"flex",gap:1,marginBottom:6,flexWrap:"wrap"}}>
+      {grps.map(g=><div key={g} onClick={()=>setGrp(g)}
+        style={{padding:"3px 10px",fontSize:9,fontWeight:grp===g?700:400,border:"1px solid "+C.brd,
+          background:grp===g?C.body:C.subOff,cursor:"pointer",borderRadius:"2px 2px 0 0"}}>{g}</div>)}</div>
+    <div style={{fontWeight:700,fontSize:11,marginBottom:6}}>MACHINE DATA</div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+      {ms.map(m=><div key={m[0]} style={{border:"1px solid #ddd",padding:6}}>
+        <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>{m[0]} {m[1]}</div>
+        <PRow l="HOME OFFSET [mm]" v={m[2]}/><PRow l="ACCEL TIME [s]" v="0.200"/>
+        <PRow l="DECEL TIME [s]" v="0.200"/><PRow l="SPEED1 [mm/s]" v={m[3]}/><PRow l="SPEED2 [mm/s]" v="5"/>
+      </div>)}</div>
+  </div>;
+}
+
+// ══════ MAIN APP ══════
+function App(){
+  const [tab,setTab]=useState("USER");
+  const [time,setTime]=useState(new Date());
+  useEffect(()=>{const t=setInterval(()=>setTime(new Date()),1000);return ()=>clearInterval(t);},[]);
+  const fmt=d=>{
+    const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const p=n=>String(n).padStart(2,"0");
+    return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())} ${days[d.getDay()]}`;
+  };
+  const mainTabs=["USER","HOME RETURN","AUTO","MANUAL","MAINTENANCE"];
+  const rightTabs=["ERROR HISTORY","PARAMETER"];
+  return <div style={{width:"100%",fontSize:12,color:C.bk,background:C.hdr,padding:"2px 4px"}}>
+    <div style={{textAlign:"center",padding:"2px",color:"#999",fontSize:10,fontWeight:700}}>
+      SHIBUYA CORPORATION — SBP662 Micro Ball Mounter — HMI Training Demo v5.9</div>
+    <div style={{background:C.body,border:"2px solid "+C.brd,minHeight:"calc(100vh - 44px)",display:"flex",flexDirection:"column"}}>
+      {/* HEADER */}
+      <div style={{display:"flex",alignItems:"flex-end",background:C.hdr,padding:"3px 4px 0",borderBottom:"1px solid "+C.brd}}>
+        {mainTabs.map(t=>{const on=tab===t;return <div key={t} onClick={()=>setTab(t)}
+          style={{padding:"6px 14px",fontSize:11,fontWeight:700,border:"1px solid "+(on?"#60d060":"#2a4a2a"),
+            borderBottom:on?"2px solid "+C.body:"1px solid #2a4a2a",background:on?C.tabOn:C.tabOff,
+            color:on?C.wh:"#c0c0c0",cursor:"pointer",borderRadius:"3px 3px 0 0",marginBottom:-1,marginRight:2}}>{t}</div>;})}
+        <div style={{flex:1,minWidth:10}}/>
+        <div style={{padding:"2px 8px",background:"#60e060",color:"#000",fontSize:9,fontWeight:700,marginBottom:3}}>Maintenance</div>
+        {rightTabs.map(t=>{const on=tab===t;return <div key={t} onClick={()=>setTab(t)}
+          style={{padding:"6px 14px",fontSize:11,fontWeight:700,border:"1px solid "+(on?"#60d060":"#2a4a2a"),
+            borderBottom:on?"2px solid "+C.body:"1px solid #2a4a2a",background:on?C.tabOn:C.tabOff,
+            color:on?C.wh:"#c0c0c0",cursor:"pointer",borderRadius:"3px 3px 0 0",marginBottom:-1,marginLeft:2}}>{t}</div>;})}
+        <div style={{textAlign:"right",fontSize:10,lineHeight:"14px",color:"#e0e0e0",paddingBottom:3,paddingLeft:8,whiteSpace:"nowrap"}}>
+          <div>{fmt(time)}</div><div>ProductName: DEMO-WISOL4-TRA</div><div>Lot ID:        ID NUMBER</div></div>
+      </div>
+      {/* BODY */}
+      <div style={{flex:1,padding:10,overflow:"auto",minHeight:500}}>
+        {tab==="USER"&&<UserTab/>}{tab==="HOME RETURN"&&<HomeReturnTab/>}{tab==="AUTO"&&<AutoTab/>}
+        {tab==="MANUAL"&&<ManualTab/>}{tab==="MAINTENANCE"&&<MaintenanceTab/>}
+        {tab==="ERROR HISTORY"&&<ErrorHistoryTab/>}{tab==="PARAMETER"&&<ParameterTab/>}
+      </div>
+      {/* FOOTER */}
+      <div style={{display:"flex",alignItems:"center",gap:3,padding:"2px 4px",borderTop:"1px solid "+C.brd,background:"#d0d0d0",fontSize:9}}>
+        <div style={{padding:"2px 10px",border:"2px solid #4080c0",background:C.wh,fontWeight:700,color:"#4080c0",borderRadius:2}}>LIST</div>
+        <div style={{background:C.stRed,color:C.wh,padding:"2px 4px",fontWeight:700}}>513</div>
+        <div style={{background:C.stRed,color:C.wh,padding:"2px 6px",fontWeight:700,fontSize:9}}>{fmt(time).substring(0,16)}</div>
+        <div style={{flex:1,background:C.stYlw,padding:"2px 6px",fontWeight:700}}>ATTN001_Decrease Of Voltage Of Battery</div>
+        <div style={{padding:"1px 6px",border:"1px solid "+C.brd,fontWeight:700,fontSize:12,background:"#e0e0e0",cursor:"pointer"}}>▲</div>
+        <div style={{padding:"1px 6px",border:"1px solid "+C.brd,fontWeight:700,fontSize:12,background:"#e0e0e0",cursor:"pointer"}}>▼</div>
+        <div style={{padding:"3px 12px",background:C.buzz,color:C.wh,fontWeight:700,fontSize:10,borderRadius:2,cursor:"pointer"}}>BUZZER</div>
+      </div>
+      <div style={{fontSize:8,padding:"0 4px",color:"#666"}}>E: 0 W: 1 M: 0</div>
+    </div>
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
