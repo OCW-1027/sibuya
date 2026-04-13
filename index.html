@@ -939,22 +939,28 @@ function MaintenanceTab(){
           <div style={{fontWeight:700,fontSize:10,marginBottom:4,padding:"2px 4px",background:"#d0d0d0"}}>BALL PARTS</div>
           <div style={{display:"flex",gap:16,marginBottom:6}}>
             <div><div style={{fontWeight:700,fontSize:9}}>M26/27 BALL XY</div>
-              <div style={{display:"flex",gap:3,marginTop:2}}><Btn t={"MASK CHG\nPOS(R)"} c={C.blu} s/><Btn t={"HEAD CHG\nPOS(C)"} c={C.blu} s/></div></div>
-            <div><div style={{fontWeight:700,fontSize:9}}>M28 BALL Z</div><Btn t={"nAVOID\nPOS"} c={C.blu} s/></div>
-            <div><div style={{fontWeight:700,fontSize:9}}>M34 BALL SUPPLY</div><Btn t={"LEFT\nAVOID POS"} c={C.blu} s/></div></div>
+              <div style={{display:"flex",gap:3,marginTop:2}}><Btn t={"MASK CHG\nPOS(R)"} c={C.grn} s/><Btn t={"HEAD CHG\nPOS(C)"} c={C.grn} s/></div></div>
+            <div><div style={{fontWeight:700,fontSize:9}}>M28 BALL Z</div><Btn t={"nAVOID\nPOS"} c={C.grn} s/></div>
+            <div><div style={{fontWeight:700,fontSize:9}}>M34 BALL SUPPLY</div><Btn t={"LEFT\nAVOID POS"} c={C.grn} s/></div></div>
           <div style={{display:"flex",gap:16,marginBottom:8}}>
             <div><div style={{fontWeight:700,fontSize:9}}>SV81 MASK PUSH</div><div style={{display:"flex",gap:3,marginTop:2}}><Btn t="UP" c={C.grn} s/><Btn t="DOWN" c={C.grn} s/></div></div>
             <div><div style={{fontWeight:700,fontSize:9}}>SV85 BALL SUPPLY</div><div style={{display:"flex",gap:3,marginTop:2}}><Btn t="UP" c={C.grn} s/><Btn t="DOWN" c={C.grn} s/></div></div></div>
-          <div style={{fontWeight:700,fontSize:9,marginBottom:2}}>BALL</div>
-          <div style={{marginBottom:8}}><Btn t={"MAKE EVEN\nRUN"} c={C.grn} s/></div>
-          <div style={{fontWeight:700,fontSize:9,marginBottom:2}}>1CYCLE</div>
-          <div style={{display:"flex",gap:3,marginBottom:8}}><Btn t={"MASK MARK\nSEARCH"} c={C.grn} s/><Btn t={"CAM21\nB MASK"} c={C.blu} s/></div>
-          <div style={{fontWeight:700,fontSize:9,marginBottom:3}}>BALL REMAINING AMOUNT(0-4000)</div>
-          <div style={{fontSize:9}}>
-            <div style={{display:"flex",gap:4,marginBottom:2}}><span style={{width:60}}>FRONT</span><IF v="76" w={45}/></div>
-            <div style={{display:"flex",gap:4,marginBottom:2}}><span style={{width:60}}>CENTER</span><IF v="112" w={45}/></div>
-            <div style={{display:"flex",gap:4,marginBottom:6}}><span style={{width:60}}>REAR</span><IF v="44" w={45}/></div></div>
-          <div style={{display:"flex",gap:3}}><Btn t={"BALL\nRELEASE"} c={C.grn} s/><Btn t={"M43-46\nON"} c={C.grn} s/><Btn t={"M43-46\nOFF"} c={C.grn} s/><Btn t={"M42\nON"} c={C.grn} s/><Btn t={"M42\nOFF"} c={C.grn} s/></div>
+          <div style={{display:"flex",gap:30}}>
+            <div>
+              <div style={{fontWeight:700,fontSize:9,marginBottom:2}}>BALL</div>
+              <div style={{marginBottom:8}}><Btn t={"MAKE EVEN\nRUN"} c={C.grn} s/></div>
+              <div style={{fontWeight:700,fontSize:9,marginBottom:2}}>1CYCLE</div>
+              <div style={{display:"flex",gap:3}}><Btn t={"MASK MARK\nSEARCH"} c={C.blu} s/><Btn t={"CAM21\nB MASK"} c={C.blu} s/></div>
+            </div>
+            <div>
+              <div style={{fontWeight:700,fontSize:9,marginBottom:3}}>BALL REMAINING AMOUNT(0-4000)</div>
+              <div style={{fontSize:9}}>
+                <div style={{display:"flex",gap:4,marginBottom:2}}><span style={{width:60}}>FRONT</span><IF v="76" w={45}/></div>
+                <div style={{display:"flex",gap:4,marginBottom:2}}><span style={{width:60}}>CENTER</span><IF v="112" w={45}/></div>
+                <div style={{display:"flex",gap:4}}><span style={{width:60}}>REAR</span><IF v="44" w={45}/></div></div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:3,marginTop:8}}><Btn t={"BALL\nRELEASE"} c={C.blu} s/><Btn t={"M43-46\nON"} c={C.grn} s/><Btn t={"M43-46\nOFF"} c={C.grn} s/><Btn t={"M42\nON"} c={C.grn} s/><Btn t={"M42\nOFF"} c={C.grn} s/></div>
         </div>
       </div>
     </div>}
