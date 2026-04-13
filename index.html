@@ -28,21 +28,22 @@ function Btn({t,c=C.grn,onClick,s}){
   const [hv,setHv]=useState(false);
   const [on,setOn]=useState(false);
   const handleClick=()=>{setOn(p=>!p);onClick&&onClick();};
-  return <div style={{padding:s?"4px 8px":"8px 16px",background:on?"#98e030":c,
+  return <div style={{padding:s?"3px 6px":"5px 10px",background:on?"#98e030":c,
     filter:hv?"brightness(1.15)":"none",
-    color:on?"#000":C.wh,border:"1px solid rgba(0,0,0,0.3)",fontWeight:700,fontSize:s?10:13,
-    cursor:"pointer",textAlign:"center",lineHeight:s?"13px":"15px",borderRadius:1,
-    minWidth:s?60:90,minHeight:s?28:40,display:"inline-flex",flexDirection:"column",
+    color:on?"#000":C.wh,border:s?"1px solid rgba(0,0,0,0.4)":"2px solid rgba(0,0,0,0.35)",fontWeight:700,fontSize:s?10:12,
+    cursor:"pointer",textAlign:"center",lineHeight:s?"12px":"14px",borderRadius:1,
+    minWidth:s?55:80,minHeight:s?26:36,display:"inline-flex",flexDirection:"column",
     alignItems:"center",justifyContent:"center",whiteSpace:"pre-wrap",
+    boxShadow:"1px 1px 0 rgba(0,0,0,0.15)",
     transition:"background 0.1s",userSelect:"none"}}
     onClick={handleClick} onMouseEnter={()=>setHv(true)} onMouseLeave={()=>setHv(false)}>{t}</div>;
 }
 
 function MB({id,nm,on,onClick}){
   return <div style={{display:"inline-flex",flexDirection:"column",alignItems:"center",
-    justifyContent:"center",padding:"3px 4px",minWidth:100,minHeight:36,
-    background:on?"#80c020":C.motor,border:"1px solid #888",cursor:"pointer",
-    fontSize:10,fontWeight:700,textAlign:"center",lineHeight:"13px"}}
+    justifyContent:"center",padding:"2px 3px",minWidth:95,minHeight:34,
+    background:on?"#80c020":C.motor,border:"2px solid #777",cursor:"pointer",
+    fontSize:10,fontWeight:700,textAlign:"center",lineHeight:"12px"}}
     onClick={()=>onClick&&onClick(id)}>
     <span style={{fontSize:8,color:"#555"}}>{id}</span>
     <span style={{color:"#111"}}>{nm}</span>
@@ -58,19 +59,19 @@ function IF({v,w=60}){
 }
 
 function SubTabs({tabs,active,onSelect}){
-  return <div style={{display:"flex",gap:1,marginBottom:6,borderBottom:"1px solid "+C.brd}}>
+  return <div style={{display:"flex",gap:0,marginBottom:6,borderBottom:"1px solid "+C.brd}}>
     {tabs.map(t=><div key={t} onClick={()=>onSelect(t)}
-      style={{padding:"4px 14px",fontSize:10,fontWeight:active===t?700:400,
+      style={{padding:"4px 12px",fontSize:11,fontWeight:active===t?700:400,
         border:"1px solid "+C.brd,borderBottom:active===t?"2px solid "+C.body:"1px solid "+C.brd,
-        background:active===t?C.body:C.subOff,cursor:"pointer",borderRadius:"2px 2px 0 0",marginBottom:-1}}>{t}</div>)}
+        background:active===t?C.body:"#b8b8b8",cursor:"pointer",borderRadius:"2px 2px 0 0",marginBottom:-1}}>{t}</div>)}
   </div>;
 }
 
 function NavPanel({items,active,onSelect}){
-  return <div style={{width:120,display:"flex",flexDirection:"column",gap:3}}>
+  return <div style={{width:110,display:"flex",flexDirection:"column",gap:2}}>
     {items.map(n=><div key={n} onClick={()=>onSelect(n)}
-      style={{padding:"8px 6px",background:active===n?"#e0e0e0":"#404040",
-        color:active===n?C.bk:C.wh,border:"1px solid "+C.brd,
+      style={{padding:"6px 4px",background:active===n?"#e8e8e8":"#3a3a3a",
+        color:active===n?C.bk:C.wh,border:"2px solid "+C.brd,
         fontWeight:700,fontSize:11,cursor:"pointer",textAlign:"center",
         whiteSpace:"pre-wrap",lineHeight:"14px"}}>{n}</div>)}
   </div>;
@@ -1614,9 +1615,13 @@ function App(){
   const [time,setTime]=useState(new Date());
   useEffect(()=>{const t=setInterval(()=>setTime(new Date()),1000);return ()=>clearInterval(t);},[]);
   const fmt=d=>{
-    const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
     const p=n=>String(n).padStart(2,"0");
     return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())} ${days[d.getDay()]}`;
+  };
+  const fmtDot=d=>{
+    const p=n=>String(n).padStart(2,"0");
+    return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())}.${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
   };
   const mainTabs=["USER","HOME RETURN","AUTO","MANUAL","MAINTENANCE"];
   const rightTabs=["ERROR HISTORY","PARAMETER"];
@@ -1649,7 +1654,7 @@ function App(){
       <div style={{display:"flex",alignItems:"center",gap:3,padding:"2px 4px",borderTop:"1px solid "+C.brd,background:"#d0d0d0",fontSize:9}}>
         <div style={{padding:"2px 10px",border:"2px solid #4080c0",background:C.wh,fontWeight:700,color:"#4080c0",borderRadius:2}}>LIST</div>
         <div style={{background:C.stRed,color:C.wh,padding:"2px 4px",fontWeight:700}}>513</div>
-        <div style={{background:C.stRed,color:C.wh,padding:"2px 6px",fontWeight:700,fontSize:9}}>{fmt(time).substring(0,16)}</div>
+        <div style={{background:C.stRed,color:C.wh,padding:"2px 6px",fontWeight:700,fontSize:9}}>{fmtDot(time)}</div>
         <div style={{flex:1,background:C.stYlw,padding:"2px 6px",fontWeight:700}}>ATTN001_Decrease Of Voltage Of Battery</div>
         <div style={{padding:"1px 6px",border:"1px solid "+C.brd,fontWeight:700,fontSize:12,background:"#e0e0e0",cursor:"pointer"}}>▲</div>
         <div style={{padding:"1px 6px",border:"1px solid "+C.brd,fontWeight:700,fontSize:12,background:"#e0e0e0",cursor:"pointer"}}>▼</div>
