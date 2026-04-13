@@ -640,23 +640,22 @@ function ManualBallParts(){
     <SubTabs tabs={["TRANSFER","CAMERA/CLEANING","MOUNT","MONITOR"]} active={sub} onSelect={setSub}/>
     {sub==="TRANSFER"&&<div>
       <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>M21/22/25 BALL STAGE XYθ</div>
-      <div style={{display:"flex",gap:6,marginBottom:30}}>
+      <div style={{display:"flex",gap:6,marginBottom:20}}>
         <Btn t={"WAFER\nGET POS"} c={C.grn}/><Btn t={"THICK\nMEASURE"} c={C.grn}/><Btn t={"INSPEC\nPOS"} c={C.grn}/>
         <Btn t={"MOUNT\nPOS"} c={C.grn}/><Btn t={"WAFER\nPUT POS"} c={C.grn}/><Btn t={"DOWNUNIT\nPUT POS"} c={C.grn}/>
         <Btn t={"異物除去\n開始位置"} c={C.grn}/><Btn t={"異物除去\n終了位置"} c={C.grn}/></div>
       <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>M23/24 BALL STAGE Z/ SUPPORT Z</div>
-      <div style={{display:"flex",gap:6,marginBottom:30}}>
+      <div style={{display:"flex",gap:6,marginBottom:20}}>
         <Btn t={"GET\nHEIGHT"} c={C.grn}/><Btn t={"GET/PUT\nHEIGHT"} c={C.grn}/><Btn t={"THICK MES\nREF"} c={C.pur}/>
         <Btn t={"THICK\nMEASURE"} c={C.grn}/><Btn t={"INSPEC\nHEIGHT"} c={C.grn}/><Btn t={"MOUNT\nHEIGHT"} c={C.grn}/><Btn t={"MOUNT\nREF"} c={C.grn}/></div>
-      <div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SV53-56 BALL STAGE VACUUM</div>
-      <div style={{display:"flex",gap:6,marginBottom:30}}>
-        <Btn t={"STAGE\nVAC ON"} c={C.grn}/><Btn t={"STAGE\nVAC OFF"} c={C.grn}/></div>
-      <div style={{display:"flex",gap:60}}>
+      <div style={{display:"flex",gap:60,marginBottom:20}}>
+        <div><div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SV53-56 BALL STAGE VACUUM</div>
+          <div style={{display:"flex",gap:6}}><Btn t={"STAGE\nVAC ON"} c={C.grn}/><Btn t={"STAGE\nVAC OFF"} c={C.grn}/></div></div>
         <div><div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SV57 BALL MASK VACUUM</div>
           <div style={{display:"flex",gap:6}}><Btn t="ON" c={C.grn}/><Btn t="OFF" c={C.grn}/></div></div>
         <div><div style={{fontWeight:700,fontSize:12,marginBottom:6}}>異物除去 ブラシ</div>
           <div style={{display:"flex",gap:6}}><Btn t="上昇" c={C.grn}/><Btn t="下降" c={C.grn}/></div></div></div>
-      <div style={{display:"flex",gap:60,marginTop:20}}>
+      <div style={{display:"flex",gap:60}}>
         <div><div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SV51 BALL VACUUM PAD</div>
           <div style={{display:"flex",gap:6}}><Btn t={"PAD\nUP"} c={C.grn}/><Btn t={"PAD\nDOWN"} c={C.grn}/></div></div>
         <div><div style={{fontWeight:700,fontSize:12,marginBottom:6}}>SV52 BALL VACUUM PAD</div>
