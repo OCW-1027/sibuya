@@ -1332,16 +1332,85 @@ function ParamWafer(){
 
 function ParamTransfer(){
   const [sub,setSub]=useState("ROBOT");
-  const [dm,setDm]=useState("P-DATA");
+  const [dm,setDm]=useState("M-DATA");
   return <div style={{position:"relative"}}>
-    <SubTabs tabs={["ROBOT","FLUX STAGE","BALL STAGE"]} active={sub} onSelect={setSub}/>
+    <SubTabs tabs={["ROBOT","FLUX STAGE","BALL STAGE"]} active={sub} onSelect={s=>{setSub(s);setDm("M-DATA");}}/>
     <div style={{position:"absolute",right:10,top:2}}>
-      <Btn t={dm==="P-DATA"?"M-DATA SCREEN":"P-DATA SCREEN"} c={C.blu} s onClick={()=>setDm(d=>d==="P-DATA"?"M-DATA":"P-DATA")}/></div>
-    <div style={{fontWeight:700,fontSize:11,marginBottom:6}}>WAFER ROBOT {sub} ({dm})</div>
-    <PRow l="M91 Z HEIGHT UP" v={sub==="FLUX STAGE"?"16.600":sub==="BALL STAGE"?"17.450":"38.400"}/>
-    <PRow l="M91 Z HEIGHT DOWN" v={sub==="FLUX STAGE"?"4.600":sub==="BALL STAGE"?"3.000":"5.000"}/>
-    <PRow l="M92 θPOS" v={sub==="FLUX STAGE"?"270.0000":sub==="BALL STAGE"?"90.0000":"0.0000"} u="degree"/>
-    <PRow l="M93 R POS" v={sub==="FLUX STAGE"?"31500":sub==="BALL STAGE"?"31000":"40200"} u="pls"/>
+      <Btn t={dm==="M-DATA"?"P-DATA SCREEN":"M-DATA SCREEN"} c={C.blu} s onClick={()=>setDm(d=>d==="M-DATA"?"P-DATA":"M-DATA")}/></div>
+    {sub==="ROBOT"&&dm==="M-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>WAFER ROBOT MZ PICK UP</div>
+      <div style={{display:"flex",gap:20,fontSize:9,marginBottom:2,paddingLeft:200}}><span style={{width:80,textAlign:"center"}}>12inch</span><span style={{width:80,textAlign:"center"}}>8inch</span><span style={{width:80,textAlign:"center"}}>6inch</span></div>
+      {[["M91 Z PICK UP 1ST HEIGHT","38.400","35.100","25.700","mm"],["M91 Z PICK UP MOVEMENT","5.000","4.000","1.300","mm"],
+        ["M92 θPICK UP POS","0.0000","0.0000","0.0000","degree"],["M93 R PICK UP POS","40200","32800","33400","pls"]].map(r=>
+        <div key={r[0]} style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
+          <span style={{fontSize:9,fontWeight:700,width:196}}>{r[0]}</span>
+          <IF v={r[1]} w={60}/><span style={{fontSize:8,width:24}}>{r[4]}</span>
+          <IF v={r[2]} w={60}/><span style={{fontSize:8,width:24}}>{r[4]}</span>
+          <IF v={r[3]} w={60}/><span style={{fontSize:8}}>{r[4]}</span></div>)}
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>WAFER ROBOT MZ STORAGE</div>
+      {[["M91 Z STGE. 1ST HEIGHT","43.400","39.100","27.000","mm"],["M91 Z STGE. MOVEMENT","-5.000","-4.000","-1.000","mm"],
+        ["M92 θSTGE. POS","0.0000","0.0000","0.0000","degree"],["M93 R STGE. POS","40200","32800","33400","pls"]].map(r=>
+        <div key={r[0]} style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
+          <span style={{fontSize:9,fontWeight:700,width:196}}>{r[0]}</span>
+          <IF v={r[1]} w={60}/><span style={{fontSize:8,width:24}}>{r[4]}</span>
+          <IF v={r[2]} w={60}/><span style={{fontSize:8,width:24}}>{r[4]}</span>
+          <IF v={r[3]} w={60}/><span style={{fontSize:8}}>{r[4]}</span></div>)}
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>WAFER ROBOT ALIGNER</div>
+      <PRow l="M91 Z HEIGHT UP" v="2.100"/><PRow l="M92 Z HEIGHT DOWN" v="-5.000"/>
+      <PRow l="M92 θPOS" v="180.0700" u="degree"/><PRow l="M93 R POS" v="31022" u="pls"/>
+      <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
+        <span style={{fontSize:9,fontWeight:700,width:196}}>M93 ROBOT R ID CHECK POS</span>
+        <IF v="5400" w={60}/><span style={{fontSize:8,width:24}}>pls</span>
+        <IF v="11800" w={60}/><span style={{fontSize:8,width:24}}>pls</span>
+        <IF v="14200" w={60}/><span style={{fontSize:8}}>pls</span></div>
+    </div>}
+    {sub==="ROBOT"&&dm==="P-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>WAFER ROBOT MZ PICK UP(OFFSET)</div>
+      <PRow l="M91 Z PICK UP 1ST HEIGHT" v="0.000"/><PRow l="M91 Z PICK UP MOVEMENT" v="0.000"/>
+      <PRow l="M92 θPICK UP POS" v="0.0000" u="deg"/><PRow l="M93 R PICK UP POS" v="0" u="pls"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>WAFER ROBOT MZ STORAGE(OFFSET)</div>
+      <PRow l="M91 Z STGE. 1ST HEIGHT" v="0.000"/><PRow l="M91 Z STGE. MOVEMENT" v="0.000"/>
+      <PRow l="M92 θSTGE. POS" v="0.0000" u="deg"/><PRow l="M93 R STGE. POS" v="0" u="pls"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>WAFER ROBOT ALIGNER PUT(OFFSET)</div>
+      <PRow l="M91 Z PUT START HEIGHT" v="0.000"/><PRow l="M92 Z PUT END HEIGHT" v="0.000"/>
+      <PRow l="M92 θPUT POS" v="0.0000" u="deg"/><PRow l="M93 R PUT POS" v="0" u="pls"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>WAFER ROBOT ALIGNER TRANSFER(OFFSET)</div>
+      <PRow l="M91 Z TFR. START HEIGHT" v="0.000"/><PRow l="M91 Z TFR. END HEIGHT" v="0.000"/>
+      <PRow l="M92 θ TFR. POS" v="0.0000" u="deg"/><PRow l="M93 R TFR. POS" v="0" u="pls"/>
+      <PRow l="M93 R ID CHECK POS" v="15500" u="pls"/>
+      <div style={{marginTop:8}}><PRow l="WAFER TANSFER SPEED" v="80" u="%"/></div>
+    </div>}
+    {sub==="FLUX STAGE"&&dm==="M-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>WAFER ROBOT FLUX STAGE (M-DATA)</div>
+      <PRow l="M91 Z HEIGHT UP" v="16.600"/><PRow l="M91 Z HEIGHT DOWN" v="4.600"/>
+      <PRow l="M92 θPOS" v="270.0000" u="degree"/><PRow l="M93 R POS" v="31500" u="pls"/>
+    </div>}
+    {sub==="FLUX STAGE"&&dm==="P-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>WAFER ROBOT FLUX STAGE PUT(OFFSET)</div>
+      <PRow l="M91 Z PUT START HEIGHT" v="0.000"/><PRow l="M91 Z PUT END HEIGHT" v="0.000"/>
+      <PRow l="M91 Z VACUUM CHECK HEIGHT" v="0.000"/><PRow l="M92 θPUT POS" v="0.0000" u="degree"/>
+      <PRow l="M93 R PUT POS" v="0" u="pls"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>WAFER ROBOT FLUX PARTS STAGE GET(OFFSET)</div>
+      <PRow l="M91 Z GET START HEIGHT" v="0.000"/><PRow l="M91 Z GET END HEIGHT" v="0.000"/>
+      <PRow l="M91 Z VACUUM CHECK HEIGHT" v="0.000"/><PRow l="M92 θGET POS" v="0.0000" u="degree"/>
+      <PRow l="M93 R GET POS" v="0" u="pls"/>
+      <div style={{marginTop:8}}><PRow l="WAFER ROBOT TRANSFER SPEED" v="80" u="%"/></div>
+    </div>}
+    {sub==="BALL STAGE"&&dm==="M-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>WAFER ROBOT BALL STAGE (M-DATA)</div>
+      <PRow l="M91 Z HEIGHT UP" v="17.450"/><PRow l="M91 Z HEIGHT DOWN" v="3.000"/>
+      <PRow l="M92 θPOS" v="90.0000" u="degree"/><PRow l="M93 R POS" v="31000" u="pls"/>
+    </div>}
+    {sub==="BALL STAGE"&&dm==="P-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>WAFER ROBOT BALL STAGE PUT(OFFSET)</div>
+      <PRow l="M91 Z PUT START HEIGHT" v="0.000"/><PRow l="M91 Z PUT END HEIGHT" v="0.000"/>
+      <PRow l="M91 Z VACUUM CHECK HEIGHT" v="0.000"/><PRow l="M92 θPUT POS" v="0.0000" u="degree"/>
+      <PRow l="M93 R PUT POS" v="0" u="pls"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>WAFER ROBOT BALL STAGE GET(OFFSET)</div>
+      <PRow l="M91 Z GET START HEIGHT" v="0.000"/><PRow l="M91 Z GET END HEIGHT" v="0.000"/>
+      <PRow l="M91 Z VACUUM CHECK HEIGHT" v="0.000"/><PRow l="M92 θGET POS" v="0.0000" u="degree"/>
+      <PRow l="M93 R GET POS" v="0" u="pls"/>
+    </div>}
   </div>;
 }
 
@@ -1349,7 +1418,7 @@ function ParamFlux(){
   const [sub,setSub]=useState("TRANSFER");
   const [dm,setDm]=useState("M-DATA");
   return <div style={{position:"relative"}}>
-    <SubTabs tabs={["TRANSFER","CAMERA/CLEANING","PRINT"]} active={sub} onSelect={setSub}/>
+    <SubTabs tabs={["TRANSFER","CAMERA/CLEANING","PRINT"]} active={sub} onSelect={s=>{setSub(s);setDm("M-DATA");}}/>
     <div style={{position:"absolute",right:10,top:2}}>
       <Btn t={dm==="M-DATA"?"P-DATA SCREEN":"M-DATA SCREEN"} c={C.blu} s onClick={()=>setDm(d=>d==="M-DATA"?"P-DATA":"M-DATA")}/></div>
     {sub==="TRANSFER"&&dm==="M-DATA"&&<div>
@@ -1361,6 +1430,20 @@ function ParamFlux(){
       <PRow l="SEARCH/PRINT θ" v="0.0000" u="degree"/>
       <PRow l="M03 STAGE Z SEARCH HEIGHT" v="-0.100"/>
       <PRow l="M03 STAGE Z PRINT REF HEIGHT" v="110.180"/>
+    </div>}
+    {sub==="TRANSFER"&&dm==="P-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>M01/M02/M05 FLUX STAGE XYθ</div>
+      <PRow l="WAFER GET OFFSET X" v="0.000"/><PRow l="WAFER GET OFFSET Y" v="0.000"/>
+      <PRow l="WAFER GET OFFSET θ" v="90.4000" u="degree"/>
+      <PRow l="WAFER PUT OFFSET X" v="0.000"/><PRow l="WAFER PUT OFFSET Y" v="0.000"/>
+      <PRow l="WAFER PUT OFFSET θ" v="90.4000" u="degree"/>
+      <PRow l="SEARCH · PRINT OFFSET θ" v="0.0000" u="degree"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>M03 FLUX STAGE Z</div>
+      <PRow l="MASK UP AMOUNT" v="-1.600"/><PRow l="MASK RELEASE AMOUNT" v="0.000"/>
+      <PRow l="MASK RELEASE SPEED" v="10.00" u="mm/s"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>M04 SUPPORT Z</div>
+      <PRow l="MASK UP AMOUNT" v="0.100"/><PRow l="PRE-PRINT RETRACT AMOUNT" v="0.000"/>
+      <PRow l="MASK RELEASE AMOUNT" v="0.000"/><PRow l="MASK RELEASE SPEED" v="10.00" u="mm/s"/>
     </div>}
     {sub==="CAMERA/CLEANING"&&<div>
       <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>MASK REAR CLEANING</div>
@@ -1374,7 +1457,7 @@ function ParamFlux(){
       <PRow l="CLEAN FLUID SUPPLY WAIT TIME" v="0.500" u="s"/>
       <PRow l="MASK CLEANING SET COUNT" v="4" u="count"/>
     </div>}
-    {sub==="PRINT"&&<div>
+    {sub==="PRINT"&&dm==="M-DATA"&&<div>
       <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>FLUX SQUEEGEE</div>
       <PRow l="M07 SQUEEGEE FRONT POS" v="30.000"/>
       <PRow l="M07 SQUEEGEE REAR POS" v="30.000"/>
@@ -1390,7 +1473,25 @@ function ParamFlux(){
       <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>PRINT PRESSURE</div>
       <PRow l="DESCENT PRESSURE (PRINT)" v="0.200" u="MPa"/>
       <PRow l="ASCENT PRESSURE (CANCEL)" v="0.050" u="MPa"/>
-      <div style={{fontSize:9,color:"#666",marginTop:4}}>※ Clearance narrow → flux bleeding. Clearance wide → missing print.</div>
+    </div>}
+    {sub==="PRINT"&&dm==="P-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>FLUX SQUEEGEE</div>
+      <PRow l="M07 SQUEEGEE FRONT POS" v="30.000"/><PRow l="M07 SQUEEGEE REAR POS" v="30.000"/>
+      <PRow l="START DELAY AFTER DOWN" v="1.0" u="s"/><PRow l="SPEED" v="30" u="mm/s"/>
+      <PRow l="SQUEEGEE UP DELAY" v="0.000" u="s"/><PRow l="DOWN POS OFFSET Y" v="70.000"/>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6}}>
+        <span style={{fontSize:9,fontWeight:700}}>FLUX MGMT TIMER</span><IF v="0" w={40}/><span style={{fontSize:8}}>hour</span><IF v="0" w={40}/><span style={{fontSize:8}}>min</span></div>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginTop:4}}>
+        <span style={{fontSize:9,fontWeight:700}}>FLUX SQUEEGEE COUNT MGMT</span><IF v="9999" w={50}/><span style={{fontSize:8}}>count</span>
+        <Btn t="ERROR\nSTOP" c={C.red} s/><Btn t="ALARM" c={C.grn} s/><Btn t="DISABLE" c={C.grn} s/><IF v="4" w={30}/></div>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,textAlign:"center"}}>FLUX PRINT OFFSET WHEN NOW POSITION</div>
+      {["X","Y","θ"].map(ax=><div key={ax} style={{display:"flex",alignItems:"center",gap:4,marginTop:3,fontSize:9}}>
+        <span style={{fontWeight:700,width:130}}>FLUX PRINT OFFSET {ax}</span>
+        <span>FRONT→REAR</span><IF v={ax==="X"?"-0.032":ax==="Y"?"0.280":"0.0000"} w={55}/><span>{ax==="θ"?"degree":"mm"}</span>
+        <span style={{marginLeft:6}}>REAR→FRONT</span><IF v={ax==="X"?"-0.032":ax==="Y"?"0.280":"0.0000"} w={55}/><span>{ax==="θ"?"degree":"mm"}</span>
+        <span style={{marginLeft:6}}>{ax}</span><IF v={ax==="X"?"-0.032":ax==="Y"?"0.280":"0.0000"} w={55}/><span>{ax==="θ"?"degree":"mm"}</span>
+      </div>)}
+      <PRow l="FLUX SQUEEGEE COUNT" v="1" u="count"/>
     </div>}
   </div>;
 }
@@ -1399,21 +1500,61 @@ function ParamBall(){
   const [sub,setSub]=useState("CAMERA/CLEANING");
   const [dm,setDm]=useState("M-DATA");
   return <div style={{position:"relative"}}>
-    <SubTabs tabs={["TRANSFER","CAMERA/CLEANING","MOUNT1","MOUNT2","MOUNT3","MOUNT4","MOUNT5","MOUNT6"]} active={sub} onSelect={setSub}/>
+    <SubTabs tabs={["TRANSFER","CAMERA/CLEANING","MOUNT1","MOUNT2","MOUNT3","MOUNT4","MOUNT5","MOUNT6"]} active={sub} onSelect={s=>{setSub(s);setDm("M-DATA");}}/>
     <div style={{position:"absolute",right:10,top:2}}>
       <Btn t={dm==="M-DATA"?"P-DATA SCREEN":"M-DATA SCREEN"} c={C.blu} s onClick={()=>setDm(d=>d==="M-DATA"?"P-DATA":"M-DATA")}/></div>
-    {sub==="TRANSFER"&&<div>
+    {sub==="TRANSFER"&&dm==="M-DATA"&&<div>
       <PRow l="WAFER GET REF X" v="0.000"/><PRow l="WAFER GET REF Y" v="-2.400"/>
       <PRow l="SEARCH/MOUNT X" v="675.000"/><PRow l="SEARCH/MOUNT Y" v="0.000"/>
       <PRow l="M23 STAGE Z MOUNT REF HEIGHT" v="110.000"/>
     </div>}
-    {sub==="CAMERA/CLEANING"&&<div>
+    {sub==="TRANSFER"&&dm==="P-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>M21/M22/M25 BALL STAGE XYθ</div>
+      <PRow l="WAFER GET OFFSET X" v="0.600"/><PRow l="WAFER GET OFFSET Y" v="-0.600"/>
+      <PRow l="WAFER GET OFFSET θ" v="-90.2500" u="degree"/>
+      <PRow l="WAFER PUT OFFSET X" v="0.600"/><PRow l="WAFER PUT OFFSET Y" v="-0.600"/>
+      <PRow l="WAFER PUT OFFSET θ" v="-90.2500" u="degree"/>
+      <PRow l="DOWN STREAM PUT OFFSET X" v="0.000"/><PRow l="DOWN STREAM PUT OFFSET Y" v="0.000"/>
+      <PRow l="DOWN STREAM PUT OFFSET θ" v="0.0000" u="degree"/>
+      <PRow l="SEARCH and MOUNT OFFSET θ" v="0.0000" u="degree"/>
+      <div style={{display:"flex",gap:40,marginTop:6}}>
+        <div>
+          <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>异物去除</div>
+          <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3,fontSize:9}}>
+            <span style={{fontWeight:700}}>异物去除 功能</span><IF v="2" w={30}/>
+            <Btn t="有効" c={C.grn} s/><Btn t="無効" c={C.grn} s/></div>
+          <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3,fontSize:9}}>
+            <span style={{fontWeight:700}}>异物去除 吹气</span><IF v="2" w={30}/>
+            <Btn t="有効" c={C.grn} s/><Btn t="無効" c={C.grn} s/></div>
+          <PRow l="异物去除 平台移動速度" v="0" u="mm/s"/>
+          <PRow l="异物去除 频率" v="0" u="每"/>
+        </div>
+      </div>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>M23 BALL STAGE Z</div>
+      <PRow l="MASK UP AMOUNT" v="0.000"/><PRow l="MASK RELEASE AMOUNT" v="1.000"/>
+      <PRow l="MASK RELEASE SPEED" v="1.00" u="mm/s"/>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>M24 BALL SUPPORT Z</div>
+      <PRow l="MASK UP AMOUNT" v="0.100"/><PRow l="PRE-MOUNT RETRACT AMOUNT" v="0.500"/>
+      <PRow l="MASK RELEASE AMOUNT" v="1.000"/><PRow l="MASK RELEASE SPEED" v="1.00" u="mm/s"/>
+    </div>}
+    {sub==="CAMERA/CLEANING"&&dm==="M-DATA"&&<div>
       <PRow l="BALL MASK CENTER POS X" v="0.000"/><PRow l="BALL MASK CENTER POS Y" v="-283.135"/>
       <PRow l="CLEANING SPEED (WET)" v="50" u="mm/s"/>
       <PRow l="CLEANING SPEED (DRY)" v="50" u="mm/s"/>
       <PRow l="M32 CLEANING HEAD REF POS" v="-387.100"/>
     </div>}
-    {sub==="MOUNT1"&&<div>
+    {sub==="CAMERA/CLEANING"&&dm==="P-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>MASK REAR CLEANING</div>
+      <PRow l="M32 CLEANING HEAD RE-OFFSET" v="0.000"/><PRow l="M32 CLEANING HEAD FR-OFFSET" v="0.000"/>
+      <PRow l="M32 CLEANING OFFSET" v="0.000"/>
+      <div style={{marginTop:6}}><PRow l="WET CLEAN COUNT" v="1" u="count"/><PRow l="DRY CLEAN COUNT" v="1" u="count"/></div>
+      <PRow l="BALL MASK CLEANING FREQUENCY" v="0" u="every (0 : CLEANING DISABLE)"/>
+      <div style={{marginTop:6}}><PRow l="---" v="0.500" u="s"/></div>
+      <PRow l="CLEANING FLUID SUPPLY INTERVAL" v="1" u="count"/>
+      <PRow l="CLEANING FLUID SUPPLY WAIT TIME" v="0.500" u="s"/>
+      <div style={{marginTop:30}}><PRow l="MASK CLEANING SET COUNT" v="1" u="count"/></div>
+    </div>}
+    {sub==="MOUNT1"&&dm==="M-DATA"&&<div>
       <PRow l="MASK CAM CENTER POS X" v="0.000"/>
       <PRow l="M26 BALL SUPPLY VAC POS X" v="0.000"/>
       <PRow l="M27 BALL SUPPLY VAC POS Y" v="-289.000"/>
@@ -1422,9 +1563,41 @@ function ParamBall(){
       {["TRAY1:-490","TRAY2:-452","TRAY3:-418","TRAY4:-373","TRAY5:-338","TRAY6:-300","TRAY7:-257","TRAY8:-219","TRAY9:-185"].map(s=>{
         var p=s.split(":");return <PRow key={p[0]} l={p[0]} v={p[1]+".000"}/>;})}
     </div>}
-    {sub==="MOUNT2"&&<div>
+    {sub==="MOUNT1"&&dm==="P-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>BALLSUPPLY</div>
+      <PRow l="BIG SIZE BALL(0:DIS, 1:ENA)" v="0"/>
+      <PRow l="TRAY BALL MAKE EVEN COUNT" v="1" u="count"/>
+      <PRow l="TRAY BALL VAC ON TIME" v="0.500" u="s"/>
+      <PRow l="TRAY BALL VAC OFF TIME" v="0.500" u="s"/>
+      <div style={{display:"flex",gap:20,marginTop:6}}>
+        <div>
+          <PRow l="B-TRAY FRONT REMAIN AMOUNT THRESHOLD" v="1000"/>
+          <PRow l="B-TRAY CENTER REMAIN AMOUNT THRESHOLD" v="1000"/>
+          <PRow l="B-TRAY REAR REMAIN AMOUNT THRESHOLD" v="1000"/>
+        </div>
+        <div>
+          {["REAR","CENTER","FRONT"].map(r=><div key={r} style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
+            <span style={{fontSize:9,fontWeight:700,width:55}}>{r}</span>
+            {Array(9).fill(0).map((_,i)=><div key={i} style={{width:16,height:14,background:"#2a8a2a",border:"1px solid #666"}}/>)}
+          </div>)}
+          <div style={{display:"flex",gap:6,marginTop:4}}><Btn t="ALL ON" c={C.grn} s/><Btn t="ALL OFF" c={C.grn} s/></div>
+        </div>
+      </div>
+      <div style={{marginTop:8}}><PRow l="M28 BALL Z TRAY SUPPLY HEIGHT" v="-83.300"/>
+      <PRow l="M28 BALL Z TRAY EXHAUST HEIGHT" v="-83.300"/></div>
+      <div style={{display:"flex",gap:30,marginTop:4}}>
+        <PRow l="BALL TRAY SUPPLY VACUUM TIME" v="5.000" u="s"/>
+        <div><span style={{fontSize:9,fontWeight:700}}>FILL COUNT</span> <IF v="1" w={40}/> <span style={{fontSize:8}}>count</span></div>
+      </div>
+      <div style={{marginTop:4,fontSize:9}}>
+        {["REAR CUP","CENTER CUP","FRONT CUP"].map(c=><div key={c} style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
+          <span style={{fontWeight:700,width:80}}>{c}</span><span>ON DELAY</span>
+          <IF v={c==="CENTER CUP"?"3.000":"0.000"} w={50}/><span>s</span></div>)}
+      </div>
+    </div>}
+    {sub==="MOUNT2"&&dm==="M-DATA"&&<div>
       <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>BALL MOUNT</div>
-      <PRow l="M28 BALL Z STAGE BASE POS" v="-122.000"/><PRow l="M28 BALL Z STAGE BASE POS" v="-122.000"/>
+      <PRow l="M28 BALL Z STAGE BASE POS" v="-122.000"/>
       <div style={{fontWeight:700,fontSize:10,marginTop:6,marginBottom:4}}>※ OFFSET SET (to align ball position to wafer PAD)</div>
       <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
         <span style={{fontWeight:700,fontSize:10,minWidth:200}}>BALL MOUNT OFFSET X</span>
@@ -1454,7 +1627,38 @@ function ParamBall(){
       <PRow l="BALL COVER PRS(MOUNT)" v="0.050" u="MPa"/>
       <PRow l="BALL COVER PRS(VAC-REM)" v="0.100" u="MPa"/>
       <PRow l="BALL COVER PRS(FIXED/NOZZLE)" v="0.100" u="MPa"/>
-      <div style={{fontSize:9,color:"#666",marginTop:4}}>※ Original + Actual FLUX offset = Input value</div>
+    </div>}
+    {sub==="MOUNT2"&&dm==="P-DATA"&&<div>
+      <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>BALL MOUNT</div>
+      <PRow l="M28 BALLZ MOUNT HEIGHT" v="-120.700"/>
+      <PRow l="M28 BALLZ MOUNT AVOID HEIGHT" v="-120.700"/>
+      <div style={{marginTop:6}}>
+        <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+          <span style={{fontWeight:700,fontSize:10,minWidth:170}}>BALL MOUNT OFFSET X</span>
+          <IF v="-0.006" w={70}/><span style={{fontSize:9}}>mm</span></div>
+        <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+          <span style={{fontWeight:700,fontSize:10,minWidth:170}}>BALL MOUNT OFFSET Y</span>
+          <IF v="0.149" w={70}/><span style={{fontSize:9}}>mm</span></div>
+        <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+          <span style={{fontWeight:700,fontSize:10,minWidth:170}}>BALL MOUNT OFFSET θ</span>
+          <IF v="0.0071" w={70}/><span style={{fontSize:9}}>degree</span></div>
+      </div>
+      <div style={{display:"flex",gap:20,marginTop:6}}>
+        <div><Btn t="SET" c={C.pur} s/><div style={{fontSize:8,marginTop:2}}>SET OK</div></div>
+        <div style={{fontSize:9}}>
+          <div style={{fontWeight:700,marginBottom:4}}>MOVE STAGE TO MOUNT POSITION<br/>BALL MOUNT OFFSET X,Y,θ</div>
+          <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}><span>X</span><IF v="0.793" w={60}/><span>mm</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}><span>Y</span><IF v="0.115" w={60}/><span>mm</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:4}}><span>θ</span><IF v="0.3056" w={60}/><span>degree</span></div>
+        </div>
+      </div>
+      <div style={{fontWeight:700,fontSize:10,marginTop:8,marginBottom:4}}>AFTER BALL MOUNT OFFSET</div>
+      <PRow l="BALL ALIGNMENT AMOUNT" v="0.000"/><PRow l="BALL ALIGNMENT STOP TIME" v="0.0" u="s"/>
+      <PRow l="M21/M22 B-STAGE XY SPEED" v="1" u="mm/s"/>
+      <div style={{marginTop:6}}><PRow l="BALL TRAY EXHAUST STANDBY TIME" v="0.5" u="s"/></div>
+      <PRow l="BALL COVER PRS(MOUNT)" v="0.100" u="MPa"/>
+      <PRow l="BALL COVER PRS(VAC-REMOVE)" v="0.300" u="MPa"/>
+      <PRow l="BALL COVER PRS(REM-NOZZLE)" v="0.300" u="MPa"/>
     </div>}
     {sub==="MOUNT3"&&<div>
       <div style={{fontWeight:700,fontSize:10,marginBottom:4}}>BALL MOUNT TIME</div>
